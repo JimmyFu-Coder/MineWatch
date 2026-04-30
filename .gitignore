@@ -12,16 +12,14 @@ project.lock.json
 project.fragment.lock.json
 artifacts/
 
-## Visual Studio / Rider
+## IDE
 .vs/
+.idea/
 *.user
 *.suo
 *.userosscache
 *.sln.docstates
 *.userprefs
-
-## JetBrains Rider — selective ignore via .idea/.gitignore
-## (workspace.xml, shelf/, etc. handled there)
 
 ## .NET runtime
 *.pid
