@@ -13,6 +13,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0D01344A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MineWatch.UnitTests", "tests\MineWatch.UnitTests\MineWatch.UnitTests.csproj", "{9C09589B-D8BA-4B57-9CC4-924D7DF6DFC8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TruckMocker", "TruckMocker\TruckMocker.csproj", "{62B505A9-6718-4B4A-BCAA-D8D40A56864E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -34,6 +36,10 @@ Global
 		{9C09589B-D8BA-4B57-9CC4-924D7DF6DFC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9C09589B-D8BA-4B57-9CC4-924D7DF6DFC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9C09589B-D8BA-4B57-9CC4-924D7DF6DFC8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{62B505A9-6718-4B4A-BCAA-D8D40A56864E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{62B505A9-6718-4B4A-BCAA-D8D40A56864E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{62B505A9-6718-4B4A-BCAA-D8D40A56864E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{62B505A9-6718-4B4A-BCAA-D8D40A56864E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{E9DC4CBA-9ADB-49CB-B45E-C83606FC6516} = {B8B96D91-5CF8-44B7-86A7-CD781E8D2CB0}
