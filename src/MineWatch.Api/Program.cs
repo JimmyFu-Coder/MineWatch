@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using MineWatch.Api.Services;
 using MineWatch.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,7 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 builder.Services.AddControllers();
+builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(Options =>
     Options.TokenValidationParameters = new TokenValidationParameters
     {
