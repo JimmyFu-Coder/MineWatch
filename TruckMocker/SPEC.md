@@ -17,7 +17,7 @@ TruckMocker 是一个 MQTT 模拟器，用于模拟卡车车队实时发送 GPS 
 | `Data_Ping_time` | GPS ping 时间 |
 | `Curr_lat` | 纬度 |
 | `Curr_lon` | 经度 |
-| `ontime` | 准点状态（G=准点，NULL=延误） |
+
 
 ---
 
@@ -46,7 +46,6 @@ TruckMocker 是一个 MQTT 模拟器，用于模拟卡车车队实时发送 GPS 
   "temperature": 32.5,
   "fuelLevel": 75.0,
   "eventType": "driving",
-  "ontime": "G"
 }
 ```
 
