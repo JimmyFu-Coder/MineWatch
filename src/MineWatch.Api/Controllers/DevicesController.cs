@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MineWatch.Api.DTOs;
 using MineWatch.Api.Services;
@@ -6,6 +7,7 @@ namespace MineWatch.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize] 
 public class DevicesController(IDeviceService deviceService) : ControllerBase
 {   
     
