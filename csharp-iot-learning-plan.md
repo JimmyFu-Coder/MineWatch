@@ -11,12 +11,14 @@
 1. [项目概述](#项目概述)
 2. [技术栈总览](#技术栈总览)
 3. [本地开发环境策略](#本地开发环境策略)
-4. [Sprint 1 — 设备数据采集服务](#sprint-1--设备数据采集服务第-17-周)
-5. [Sprint 2 — 消息队列 + 实时告警](#sprint-2--消息队列--实时告警第-816-周)
-6. [Sprint 3 — DDD 重构 + 微服务拆分](#sprint-3--ddd-重构--微服务拆分第-1724-周)
-7. [Sprint 4 — AWS 生产化部署](#sprint-4--aws-生产化部署第-2530-周)
-8. [AWS 费用规划](#aws-费用规划)
-9. [面试资产清单](#面试资产清单)
+4. [Sprint 1 — 设备管理 + 遥测摄取（第 1–5 周）](#sprint-1--设备管理--遥测摄取第-15-周)
+5. [Sprint 2A — 消息队列 + 告警引擎（第 6–10 周）](#sprint-2a--消息队列--告警引擎第-610-周)
+6. [Sprint 2B — 实时推送 + 缓存 + 可观测性（第 11–15 周）](#sprint-2b--实时推送--缓存--可观测性第-1115-周)
+7. [Sprint 3 — 高并发压力测试（第 16–19 周）](#sprint-3--高并发压力测试第-1619-周)
+8. [Sprint 4 — DDD 重构 + 微服务拆分（第 20–25 周）](#sprint-4--ddd-重构--微服务拆分第-2025-周)
+9. [Sprint 5 — AWS 生产化部署（第 26–30 周）](#sprint-5--aws-生产化部署第-2630-周)
+10. [AWS 费用规划](#aws-费用规划)
+11. [面试资产清单](#面试资产清单)
 
 ---
 
@@ -34,7 +36,7 @@
 
 **最终可展示的面试话术**：
 
-> "我在 AWS 上独立设计并交付了一个生产级 IoT 监控平台，涵盖 AWS IoT Core / SQS / SNS / Amazon MQ / ECS Fargate / RDS，全套 Terraform IaC 管理，GitHub Actions CI/CD 自动化部署。"
+> "我在 AWS 上独立设计并交付了一个生产级 IoT 监控平台，涵盖 AWS IoT Core / SQS / SNS / Amazon MQ / ECS Fargate / RDS，全套 Terraform IaC 管理，GitHub Actions CI/CD 自动化部署。经过真实压力测试，遥测摄取吞吐达到 Xk msg/s，并据此做了 Channel 管道优化和数据库批量写入调优。"
 
 ---
 
@@ -42,7 +44,7 @@
 
 ### 后端核心
 
-- **语言 / 框架**：C# 12 · .NET 8 · ASP.NET Core Web API
+- **语言 / 框架**：C# 13 · .NET 9 · ASP.NET Core Web API
 - **ORM**：Entity Framework Core + PostgreSQL Provider
 - **并发**：`Channel<T>` · TPL · `IAsyncEnumerable` · `SemaphoreSlim`
 - **架构**：Clean Architecture · DDD · CQRS + MediatR
@@ -72,11 +74,16 @@
 - GitHub Actions → ECR Push → ECS Rolling Deploy
 - OIDC 无密钥认证，蓝绿部署，PR 触发自动部署到 Staging
 
+### 压力测试
+
+- **工具**：k6（HTTP 压测）+ 自定义 MQTT publisher（MQTT 压测）
+- **目标**：发现真实瓶颈，量化优化效果，产出可展示的压测报告
+
 ---
 
 ## 本地开发环境策略
 
-**核心原则**：Sprint 1–3 全程本地开发，零云费用；Sprint 4 一次性上 AWS。
+**核心原则**：Sprint 1–4 全程本地开发，零云费用；Sprint 5 一次性上 AWS。
 
 ### 本地 ↔ AWS 对照表
 
@@ -106,54 +113,46 @@ docker compose up -d
 
 ---
 
-## Sprint 1 — 设备数据采集服务（第 1–7 周）
+## Sprint 1 — 设备管理 + 遥测摄取（第 1–5 周）
 
-**目标**：搭建可运行的设备管理 + 遥测摄取服务，通过 AWS IoT Core 接收 MQTT 数据并写库。
+**目标**：搭建可运行的设备管理 API + MQTT 遥测摄取服务，数据持久化到 PostgreSQL。
 
-### 学习内容（刚好够用）
-
-- ASP.NET Core Web API：Minimal API · 依赖注入 · 中间件管道
-- C# async/await 正确姿势：Task · CancellationToken · 异常处理
-- Entity Framework Core：Code First · Migration · PostgreSQL Provider
-- MQTT 协议基础：MQTTnet 库 · AWS IoT Core Thing 注册 · TLS 证书
-- 后台服务：`IHostedService` · `BackgroundService`
+**为什么压缩到 5 周**：CRUD + MQTT 订阅 + 批量写入是基础功能，7 周太宽松。省出的时间留给后续更重的 Sprint。
 
 ### 每周任务
 
 | 周次 | 任务 | 产出 |
 |------|------|------|
-| 第 1–2 周 | 项目脚手架 + AWS IoT Core 接入 | Solution 结构 · Docker Compose · IoT Core 测试设备连通 |
-| 第 3–4 周 | 设备管理 API | CRUD + EF Core · JWT Auth · Swagger 文档 |
-| 第 5–6 周 | 遥测数据摄取 | MQTT 订阅 · `IHostedService` · 数据写库 |
-| 第 7 周 | 收尾 | xUnit 单元测试 · README · GitHub Push |
+| 第 1 周 | 项目脚手架 + EF Core + Device 实体 | Solution 结构 · Docker Compose · 数据库迁移 |
+| 第 2 周 | 设备 CRUD API + JWT Auth + Swagger | 完整 RESTful API · Swagger 可测试 |
+| 第 3 周 | AWS IoT Core 接入 + MQTT 订阅后台服务 | `MqttSubscriberService : BackgroundService` · 消息可接收 |
+| 第 4 周 | `Channel<T>` 批量写入 + 背压控制 | 遥测数据高效入库 · SemaphoreSlim 限流 |
+| 第 5 周 | 单元测试 + 健康检查 + README + GitHub 推送 | xUnit 覆盖率 > 70% · Sprint 1 收尾 |
 
-### 技术栈
+### 交付物
 
-`ASP.NET Core` · `EF Core` · `AWS IoT Core` · `MQTTnet` · `PostgreSQL` · `JWT` · `xUnit`
-
-### Sprint 1 交付物
-
-- 可运行的设备管理 API（含 Swagger）
-- 通过 AWS IoT Core 接收遥测数据并持久化到 PostgreSQL
-- xUnit 覆盖核心业务逻辑
+- [x] 设备管理 API（CRUD + JWT + Swagger）
+- [ ] MQTT 订阅服务通过 AWS IoT Core 接收遥测数据
+- [ ] `Channel<T>` 批量写入 PostgreSQL
+- [ ] xUnit 单元测试覆盖率 > 70%
+- [ ] README + 架构图
 
 ---
 
-## Sprint 2 — 消息队列 + 实时告警（第 8–16 周）
+## Sprint 2A — 消息队列 + 告警引擎（第 6–10 周）
 
-**目标**：引入完整消息队列架构，实现高并发遥测处理和实时告警推送。
+**目标**：引入 SQS 替代直连 MQTT 写库，实现告警规则引擎 + SNS 通知。
 
-### 学习内容（刚好够用）
+**为什么先做这个**：消息队列是架构的核心变更——把"MQTT 直连写库"变成"MQTT → SQS → Worker 消费写库"。先把数据管道稳定了，再加实时推送和缓存才有意义。
+
+### 学习内容
 
 - **SQS**：消费者模式 · 可见性超时 · 死信队列 · .NET AWS SDK
 - **SNS**：Topic · Subscription · 多协议推送
-- **Amazon MQ + MassTransit**：Outbox Pattern · 消息幂等性 · 死信处理
-- **并发编程**：`Channel<T>` 管道 · 背压控制 · `BenchmarkDotNet` 压测
-- **实时推送**：SignalR Hub · Redis Backplane
-- **缓存**：Redis 设备状态缓存 · 告警去重 · 滑动窗口限流
-- **可观测性**：Serilog 结构化日志 · CloudWatch Metrics
+- **Outbox Pattern**：消息不丢失保障
+- **告警规则引擎**：阈值检测 · 规则配置 · 告警触发
 
-### 消息队列架构说明
+### 消息队列架构
 
 ```
 AWS IoT Core
@@ -169,56 +168,111 @@ Amazon SQS ──► .NET Worker Service ──► PostgreSQL（写遥测）
                ├── 邮件订阅
                ├── SQS 订阅 ──► 日志服务
                └── Lambda 订阅
-                    │
-             Amazon MQ (RabbitMQ)
-          （微服务间事件总线，MassTransit）
-                    │
-              SignalR Hub ──► 前端实时推送
 ```
-
-### 选型理由
-
-| 服务 | 选型理由 |
-|------|----------|
-| SQS | 设备消息量大、允许短暂延迟，队列缓冲天然适合遥测摄取 |
-| SNS | 告警需要同时通知多个下游（邮件 + 日志 + 前端），一对多广播 |
-| Amazon MQ | 微服务间需要 AMQP 语义和事务性消息，MassTransit 屏蔽 broker 差异 |
 
 ### 每周任务
 
 | 周次 | 任务 | 产出 |
 |------|------|------|
-| 第 8–9 周 | SQS 消费者服务 | IoT Core 规则引擎 → SQS → Worker Service 消费写库 |
-| 第 10–11 周 | 告警规则引擎 + SNS | 阈值检测 → SNS Publish → 邮件通知端到端验证 |
-| 第 12–13 周 | Amazon MQ + MassTransit | Outbox Pattern 落地，消息不丢失保障 |
-| 第 14–15 周 | SignalR + ElastiCache | 实时推送 + Redis 缓存最新设备状态 |
-| 第 16 周 | 可观测性 | CloudWatch Dashboard + Serilog 结构化日志 |
+| 第 6 周 | LocalStack 本地环境 + SQS 基础消费者 | LocalStack Docker 配置 · Worker Service 从 SQS 消费消息 |
+| 第 7 周 | IoT Core 规则引擎 → SQS 路由 | 端到端：设备 → IoT Core → SQS → Worker 消费写库 |
+| 第 8 周 | 告警规则引擎 | 阈值检测逻辑 · 告警记录持久化 · 可配置规则 |
+| 第 9 周 | SNS 通知 + Outbox Pattern | 告警 → SNS → 邮件 · Outbox 保障消息不丢 |
+| 第 10 周 | 集成测试 + 收尾 | LocalStack 集成测试 · SQS 死信队列验证 |
 
-### 技术栈
+### 交付物
 
-`SQS` · `SNS` · `Amazon MQ` · `MassTransit` · `Outbox Pattern` · `Channel<T>` · `SignalR` · `ElastiCache` · `LocalStack`
-
-### Sprint 2 交付物
-
-- 完整消息链路：IoT Core → SQS → 处理 → SNS 告警 → Amazon MQ 事件总线
-- BenchmarkDotNet 压测报告（目标：10k msg/s 吞吐）
-- CloudWatch Dashboard 截图
-- 实时告警推送的简单 React 前端演示页
+- [ ] 完整消息链路：IoT Core → SQS → Worker Service → PostgreSQL
+- [ ] 告警规则引擎 + SNS 多渠道通知
+- [ ] Outbox Pattern 落地
+- [ ] LocalStack 集成测试
 
 ---
 
-## Sprint 3 — DDD 重构 + 微服务拆分（第 17–24 周）
+## Sprint 2B — 实时推送 + 缓存 + 可观测性（第 11–15 周）
 
-**目标**：将单体服务按 DDD 拆分为三个独立微服务，引入 Clean Architecture 分层。
+**目标**：引入 SignalR 实时推送、Redis 缓存、MassTransit 事件总线、结构化日志。
 
-### 学习内容（刚好够用）
+**为什么放第二步**：有了稳定的数据管道和告警，再加实时推送和缓存是锦上添花，顺序自然。
+
+### 学习内容
+
+- **SignalR**：Hub · Redis Backplane · 客户端订阅
+- **Redis**：设备状态缓存 · 告警去重 · 滑动窗口限流
+- **Amazon MQ + MassTransit**：微服务间事件总线 · 消费者配置
+- **可观测性**：Serilog 结构化日志 · CloudWatch Metrics
+
+### 每周任务
+
+| 周次 | 任务 | 产出 |
+|------|------|------|
+| 第 11 周 | SignalR Hub + 简单 React 前端演示页 | 遥测数据实时推送到浏览器 |
+| 第 12 周 | Redis Backplane + 设备状态缓存 | SignalR 横向扩展 · 最新设备状态从 Redis 读取 |
+| 第 13 周 | 告警去重 + 滑动窗口限流 | Redis 实现告警去重 · API 限流中间件 |
+| 第 14 周 | Amazon MQ + MassTransit 事件总线 | Docker RabbitMQ · 微服务间事件发布/订阅 |
+| 第 15 周 | Serilog + CloudWatch Metrics + 收尾 | 结构化日志 · 关键指标埋点 · Sprint 2 完整收尾 |
+
+### 交付物
+
+- [ ] SignalR 实时推送 + 简单前端演示
+- [ ] Redis 缓存最新设备状态 + 告警去重
+- [ ] MassTransit 事件总线（RabbitMQ）
+- [ ] Serilog 结构化日志 + CloudWatch Metrics
+
+---
+
+## Sprint 3 — 高并发压力测试（第 16–19 周）
+
+**目标**：用真实压力把系统逼到极限，发现瓶颈，量化优化效果，产出可展示的压测报告。
+
+**为什么单独成 Sprint**：之前压测挤在 Sprint 2 最后一行，根本来不及做。压测不只是"跑个 benchmark"——它是发现问题、验证架构设计是否有效的关键环节。单独 4 周，从施压 → 发现问题 → 优化 → 验证，形成完整闭环。
+
+### 学习内容
+
+- **压测工具**：k6（HTTP）· 自定义 MQTT publisher（MQTT）
+- **性能分析**：dotnet-trace · dotnet-counters · EF Core 日志分析
+- **数据库调优**：索引优化 · 批量写入策略 · 连接池配置
+- **瓶颈分析**：CPU · 内存 · IO · 锁竞争 · Channel 积压
+
+### 每周任务
+
+| 周次 | 任务 | 产出 |
+|------|------|------|
+| 第 16 周 | 搭建压测环境 + 基线测试 | k6 脚本 · MQTT 压测工具 · 基线性能数据 |
+| 第 17 周 | 施压 + 瓶颈定位 | 用 dotnet-trace / counters 定位瓶颈 · 记录问题清单 |
+| 第 18 周 | 针对性优化 | 数据库索引 · Channel 配置调优 · 批量大小调整 · 连接池 |
+| 第 19 周 | 优化后复测 + 压测报告 | 优化前后对比数据 · 压测报告（可用于面试） |
+
+### 压测场景
+
+| 场景 | 工具 | 指标 |
+|------|------|------|
+| MQTT 遥测涌入 | 自定义 publisher（100+ 设备） | 写入吞吐（msg/s）· 端到端延迟 · 丢失率 |
+| 设备 API 并发读写 | k6 | RPS · P50/P95/P99 延迟 · 错误率 |
+| 告警风暴 | 模拟批量阈值超限 | 告警处理延迟 · SNS 推送成功率 |
+| Channel 积压恢复 | 突发流量后观察恢复时间 | 积压消化时间 · 内存使用 |
+
+### 交付物
+
+- [ ] k6 压测脚本（可重复运行）
+- [ ] MQTT 压测工具
+- [ ] 压测报告：基线数据 → 瓶颈分析 → 优化措施 → 优化后对比
+- [ ] 面试可用的话术："通过压测发现 X 瓶颈，用 Y 方案优化，吞吐从 A 提升到 B"
+
+---
+
+## Sprint 4 — DDD 重构 + 微服务拆分（第 20–25 周）
+
+**目标**：将单体服务按 DDD 拆分为三个独立微服务，引入 Clean Architecture + CQRS。
+
+**为什么放在压测之后**：压测让你对系统的性能特征和数据流有了深刻理解。先压测再重构，你才知道哪些地方值得拆、哪些地方性能敏感不能乱动。而不是盲目地为了 DDD 而 DDD。
+
+### 学习内容
 
 - **DDD 战术模式**：聚合根 · 值对象 · 领域事件 · 仓储 · 领域服务
 - **限界上下文划分**：设备管理 BC / 遥测采集 BC / 告警通知 BC
 - **CQRS + MediatR**：Command Handler · Query Handler · Pipeline Behavior
 - **Clean Architecture 分层**：Domain → Application → Infrastructure → API
-- **Amazon API Gateway**：JWT Authorizer · 路由 · Rate Limiting · ECS 集成
-- **集成测试**：TestContainers · WebApplicationFactory · LocalStack
 
 ### DDD 核心概念对照（IoT 场景）
 
@@ -234,30 +288,26 @@ Amazon SQS ──► .NET Worker Service ──► PostgreSQL（写遥测）
 
 | 周次 | 任务 | 产出 |
 |------|------|------|
-| 第 17–19 周 | DDD 重构现有服务 | 识别聚合根、值对象、领域事件，重构分层 |
-| 第 20–21 周 | CQRS + MediatR 全面改造 | 所有写操作改 Command Handler，读操作改 Query Handler |
-| 第 22–23 周 | 微服务独立部署 + API Gateway | 三个服务独立仓库，API Gateway 统一入口 |
-| 第 24 周 | 集成测试 + 架构文档 | TestContainers 集成测试 · ADR 文档 · 架构图更新 |
+| 第 20–21 周 | DDD 战术设计 + Domain 层 | 识别聚合根、值对象、领域事件 · 纯 Domain 层无依赖 |
+| 第 22–23 周 | Clean Architecture 分层 + CQRS | Domain → Application → Infrastructure → API 分层 · MediatR Handler |
+| 第 24 周 | 微服务独立部署 | 三个服务独立项目 · 各自 Dockerfile · 独立运行 |
+| 第 25 周 | 集成测试 + ADR 文档 | TestContainers 集成测试 · 架构决策记录 · DDD 架构图 |
 
-### 技术栈
+### 交付物
 
-`DDD` · `CQRS` · `MediatR` · `Clean Architecture` · `Amazon API Gateway` · `TestContainers` · `ADR`
-
-### Sprint 3 交付物
-
-- 三个微服务按 Clean Architecture 分层，独立 GitHub 仓库
-- Amazon API Gateway 统一入口，JWT 鉴权
-- DDD 架构图（含限界上下文划分）
-- ADR（架构决策记录）文档
-- 集成测试覆盖率 > 70%
+- [ ] 三个微服务按 Clean Architecture 分层
+- [ ] CQRS + MediatR 全面改造
+- [ ] DDD 架构图（含限界上下文划分）
+- [ ] ADR 架构决策记录
+- [ ] 集成测试覆盖率 > 70%
 
 ---
 
-## Sprint 4 — AWS 生产化部署（第 25–30 周）
+## Sprint 5 — AWS 生产化部署（第 26–30 周）
 
 **目标**：将三个微服务完整部署到 AWS，Terraform IaC 管理全套资源，GitHub Actions 自动化 CI/CD。
 
-> **优势**：你已有 AWS 认证 + Terraform + GitHub Actions 经验，这个 Sprint 进度会比其他人快很多。
+**为什么压缩到 4 周（原 6 周）**：你已有 AWS 认证 + Terraform + GitHub Actions 经验，这部分是你的强项，不需要 6 周。省出的 2 周给了前面的压测 Sprint。
 
 ### AWS 架构总览
 
@@ -315,29 +365,24 @@ jobs:
 
 | 周次 | 任务 | 产出 |
 |------|------|------|
-| 第 25–26 周 | Terraform 搭 AWS 基础设施 | VPC · RDS · ElastiCache · SQS · SNS · Amazon MQ · ECS Cluster |
-| 第 27 周 | ECS Fargate 部署三个服务 | Task Definition · Service · ALB · 端到端联调 |
-| 第 28 周 | GitHub Actions CI/CD | OIDC + ECR + ECS Rolling Update，PR 触发自动部署 Staging |
-| 第 29 周 | CloudWatch Dashboard + X-Ray | SQS 队列深度告警 · ECS 资源告警 · 分布式追踪链路 |
-| 第 30 周 | 项目文档 + 面试准备 | 架构图（含 AWS 资源）· 成本估算 · 压测报告 · STAR 故事 |
+| 第 26 周 | Terraform 搭基础设施 | VPC · RDS · ElastiCache · SQS · SNS · Amazon MQ · ECS Cluster |
+| 第 27 周 | ECS Fargate 部署三个服务 + API Gateway | Task Definition · Service · ALB · 端到端联调 |
+| 第 28 周 | GitHub Actions CI/CD + CloudWatch | OIDC + ECR + ECS Rolling Update · Dashboard + X-Ray |
+| 第 29–30 周 | 项目文档 + 面试准备 | 架构图 · 成本估算 · 压测报告整理 · STAR 故事 |
 
-### 技术栈
+### 交付物
 
-`ECS Fargate` · `ECR` · `RDS PostgreSQL` · `ElastiCache` · `Amazon API Gateway` · `CloudWatch` · `X-Ray` · `Terraform` · `GitHub Actions` · `OIDC`
-
-### Sprint 4 交付物
-
-- 完整 Terraform 代码（`terraform apply` 一键起全套环境）
-- GitHub Actions 全自动 CI/CD Pipeline
-- CloudWatch Dashboard 截图（含关键指标）
-- X-Ray 分布式追踪链路截图
-- AWS 架构图（可用于面试展示）
+- [ ] 完整 Terraform 代码（`terraform apply` 一键起全套环境）
+- [ ] GitHub Actions 全自动 CI/CD Pipeline
+- [ ] CloudWatch Dashboard 截图
+- [ ] X-Ray 分布式追踪链路截图
+- [ ] AWS 架构图（可用于面试展示）
 
 ---
 
 ## AWS 费用规划
 
-### 开发阶段（Sprint 1–3）：接近零费用
+### 开发阶段（Sprint 1–4）：接近零费用
 
 | 服务 | 本地替代 | 费用 |
 |------|----------|------|
@@ -347,7 +392,7 @@ jobs:
 | SQS / SNS | LocalStack | $0 |
 | MQTT Broker | EMQX Docker / IoT Core 免费层 | $0 |
 
-### 部署阶段（Sprint 4）：1–2 个月
+### 部署阶段（Sprint 5）：1–2 个月
 
 | 服务 | 预估月费（AUD） | 备注 |
 |------|---------------|------|
@@ -383,21 +428,23 @@ jobs:
 - [ ] xUnit 单元测试 + TestContainers 集成测试
 - [ ] ADR 架构决策记录文档
 - [ ] 完整 README（含架构图、技术选型说明）
+- [ ] 压测报告（基线 → 瓶颈 → 优化 → 对比）
 
 ### 可量化的面试数据
 
-- 遥测摄取吞吐量（BenchmarkDotNet 压测报告）
-- 单元测试覆盖率（目标 > 70%）
+- 遥测摄取吞吐量（压测报告，优化前后对比）
+- 设备 API 并发性能（k6 报告，P50/P95/P99 延迟）
+- 单元测试 + 集成测试覆盖率（目标 > 70%）
 - CloudWatch Dashboard 截图（真实 AWS 监控数据）
 - X-Ray 分布式追踪链路截图
 
 ### 面试时可讲的故事（STAR 格式）
 
-1. **高并发**：用 `Channel<T>` 替换同步写入，将遥测摄取吞吐提升 X 倍
+1. **高并发**：通过压测发现 Channel 积压瓶颈，调整批量大小和消费者并发数，将遥测吞吐从 X 提升到 Y
 2. **消息队列**：SQS + Outbox Pattern 解决 IoT 数据丢失问题的设计思路
-3. **DDD 重构**：识别三个限界上下文，把单体拆成微服务的决策过程
-4. **AWS 部署**：Terraform IaC + ECS Fargate + GitHub Actions 全自动化的实现细节
-5. **PostgreSQL 调优**：结合现有 Raptor OS 经验，讲 RDS Parameter Group 和索引优化
+3. **压力测试**：用 k6 + 自定义 MQTT 工具模拟 100+ 设备并发，发现并解决了 Z 问题
+4. **DDD 重构**：在压测验证性能基线后，识别三个限界上下文，把单体拆成微服务
+5. **AWS 部署**：Terraform IaC + ECS Fargate + GitHub Actions 全自动化的实现细节
 
 ---
 
@@ -414,13 +461,15 @@ jobs:
 - [AWS IoT Core 开发者指南](https://docs.aws.amazon.com/iot/latest/developerguide)
 - [MassTransit 文档](https://masstransit.io/documentation)
 - [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws)
+- [k6 文档](https://k6.io/docs/)
 
 ### 工具
 
+- **k6**：HTTP 压力测试工具（开源，Grafana 生态）
 - **LocalStack**：本地模拟 AWS 服务（`localstack/localstack` Docker 镜像）
 - **TestContainers**：集成测试用真实容器（`Testcontainers` NuGet 包）
-- **BenchmarkDotNet**：.NET 性能基准测试
+- **dotnet-trace / dotnet-counters**：.NET 性能分析工具
 
 ---
 
-*最后更新：2026 年 4 月*
+*最后更新：2026 年 5 月*

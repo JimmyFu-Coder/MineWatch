@@ -21,7 +21,7 @@ public class MqttPublisher : IAsyncDisposable
             .Build();
         await _client.ConnectAsync(options);
     }
-    public async Task PublishAsync(string topic, TrajectoryRecord record)
+    public async Task PublishAsync(string vehicleId, TrajectoryRecord record)
     {
         var payload = new
         {
@@ -34,13 +34,13 @@ public class MqttPublisher : IAsyncDisposable
         };
 
         var message = new MqttApplicationMessageBuilder()
-            .WithTopic(topic)
+            .WithTopic($"devices/{vehicleId}/telemetry")
             .WithPayload(JsonSerializer.Serialize(payload))
             .Build();
         await _client.PublishAsync(message);
     }
     public async ValueTask DisposeAsync()
     {
-        await _client.DisconnectAsync();
+        await _client.DisconnectAsync(new MqttClientDisconnectOptionsBuilder().Build());
     }
 }

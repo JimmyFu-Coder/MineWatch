@@ -3,9 +3,13 @@ namespace MineWatch.Infrastructure.Entities;
 public class TelemetryReading
 {
     public Guid Id { get; set; }
-    public DateTime Timestamp { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public float Temperature { get; set; }
-    public float Pressure { get; set; }
-    public Device Device { get; set; } = null!;
+    public string VehicleNo { get; set; } = string.Empty;
+    public DateTime Timestamp { get; set; }                                        
+    public double Lat { get; set; }                                                
+    public double Lon { get; set; }                                                
+    public double Speed { get; set; }                                              
+    public double Heading { get; set; }                                            
+    public DateTime CreatedAt { get; set; }                                        
+    public Guid DeviceId { get; set; }                                             
+    public Device Device { get; set; } = null!; 
 }

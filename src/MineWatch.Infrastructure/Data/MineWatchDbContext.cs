@@ -11,7 +11,7 @@ public class MineWatchDbContext : DbContext
     }
 
     public DbSet<Device> Devices => Set<Device>();
-
+    public DbSet<TelemetryReading> TelemetryReadings => Set<TelemetryReading>();  
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Device>(entity =>
@@ -22,6 +22,14 @@ public class MineWatchDbContext : DbContext
             entity.Property(e => e.Status).HasConversion<string>();
         });
 
+        modelBuilder.Entity<TelemetryReading>(entity =>                                    
+        {                                                                                  
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.VehicleNo).IsRequired().HasMaxLength(50);               
+            entity.HasIndex(e => e.Timestamp);                                             
+            entity.HasIndex(e => e.DeviceId);                                              
+            entity.HasOne(e => e.Device).WithMany().HasForeignKey(e => e.DeviceId);        
+        });   
         base.OnModelCreating(modelBuilder);
     }
 }
