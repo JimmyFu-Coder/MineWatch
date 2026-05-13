@@ -126,7 +126,7 @@ public class TelemetryBatchWriterTests
 
         // Act                                                                                 
         await writer.StartAsync(CancellationToken.None);
-        await Task.Delay(2000);
+        await Task.Delay(3000);
 
         // Assert                                                                              
         var options = new DbContextOptionsBuilder<MineWatchDbContext>()
@@ -225,16 +225,15 @@ public class TelemetryBatchWriterTests
             batchSize: 100, batchTimeout: TimeSpan.FromMilliseconds(200));
 
         await writer.StartAsync(CancellationToken.None);
-
-        // 等待 writer 因重试耗尽而崩溃
+        
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => writer.ExecuteTask!);
         Assert.Equal("Simulated DB failure", ex.Message);
         dbContextFactory.Verify(                                                           
             f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()),                    
-            Times.Exactly(2));
+            Times.Exactly(3));
     }
-
+    
     [Fact(Timeout = 5000)]
     public async Task ExecuteAsync_WhenChannelClosedAfterOneItem_WritesSingleItem()
     {
@@ -255,6 +254,6 @@ public class TelemetryBatchWriterTests
         Assert.Single(saved);
         dbContextFactory.Verify(                                                           
             f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()),                    
-            Times.Exactly(3));
+            Times.Once());
     }
 }

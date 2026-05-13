@@ -46,7 +46,7 @@
                       } 
                   }
 
-                  await WriteBatchAsync(batch);
+                  await WriteBatchWithRetryAsync(batch);
               }
               catch (OperationCanceledException)
               {
@@ -57,8 +57,24 @@
                   break;      
               }  
           }
-      }                                                                                      
-                                                                                             
+      }
+
+      private async Task WriteBatchWithRetryAsync(List<TelemetryReading> batch)
+      {
+          var maxRetries = 3;
+          for (var i = 0; i < maxRetries; i++)
+          {
+              try
+              {
+                await WriteBatchAsync(batch);
+                return;
+              }
+              catch (Exception e) when(i < maxRetries - 1)
+              {
+                  logger.LogError(e, "Writing telemetry readings, retrying ({Attempt}/{Max})", i+1, maxRetries);
+              }
+          }
+      }
       private async Task WriteBatchAsync(List<TelemetryReading> batch)                       
       {           
           await using var dbContext = await dbContextFactory.CreateDbContextAsync();         

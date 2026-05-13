@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Channels;
 using MineWatch.Infrastructure.Entities;
@@ -52,26 +53,12 @@ public class MqttSubscriberService( Channel<TelemetryReading> channel, ILogger<M
     {
         try
         {
-            var json = JsonSerializer.Deserialize<JsonElement>(eventArgs.ApplicationMessage.Payload.ToArray());
-            
-            var reading = new TelemetryReading
-            {
-                Id = Guid.NewGuid(),
-                VehicleNo = json.GetProperty("vehicle_no").GetString()!,
-                Timestamp = json.GetProperty("timestamp").GetDateTime(),
-                Lat = json.GetProperty("lat").GetDouble(),
-                Lon = json.GetProperty("lon").GetDouble(),
-                Speed = json.GetProperty("speed_mps").GetDouble(),
-                Heading = json.GetProperty("heading").GetDouble(),
-                CreatedAt = DateTime.UtcNow
-            };
-
+            var reading = TelemetryParser.Parse(Encoding.UTF8.GetString(eventArgs.ApplicationMessage.Payload.ToArray()));
             await channel.Writer.WriteAsync(reading);
             logger.LogInformation("Received telemetry from {VehicleNo}", reading.VehicleNo);
         } catch (Exception ex)
         {
             logger.LogError(ex, "Failed to process MQTT message");
         }
-
     }
 }
