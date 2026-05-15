@@ -1,0 +1,48 @@
+Summary
+  Generated on: 15/5/2026 - 12:41:36 pm
+  Coverage date: 15/5/2026 - 12:36:36 pm - 15/5/2026 - 12:39:38 pm
+  Parser: MultiReport (4x Cobertura)
+  Assemblies: 2
+  Classes: 24
+  Files: 23
+  Line coverage: 14.3%
+  Covered lines: 103
+  Uncovered lines: 613
+  Coverable lines: 716
+  Total lines: 1122
+  Branch coverage: 17.8% (10 of 56)
+  Covered branches: 10
+  Total branches: 56
+  Method coverage: 23.1% (16 of 69)
+  Full method coverage: 23.1% (16 of 69)
+  Covered methods: 16
+  Fully covered methods: 16
+  Total methods: 69
+
+MineWatch.Api                                                             24%
+  MineWatch.Api.Controllers.AuthController                                 0%
+  MineWatch.Api.Controllers.DevicesController                              0%
+  MineWatch.Api.Controllers.HealthController                               0%
+  MineWatch.Api.Controllers.LoginRequest                                   0%
+  MineWatch.Api.DTOs.CreateDeviceRequest                                   0%
+  MineWatch.Api.DTOs.DeviceResponse                                        0%
+  MineWatch.Api.DTOs.ErrorResponse                                         0%
+  MineWatch.Api.DTOs.PageResponse<T>                                       0%
+  MineWatch.Api.DTOs.UpdateDeviceRequest                                   0%
+  MineWatch.Api.Middleware.ExceptionHandlingMiddleware                     0%
+  MineWatch.Api.Services.DeviceService                                     0%
+  MineWatch.Api.Services.MqttSubscriberService                             0%
+  MineWatch.Api.Services.TelemetryBatchWriter                            100%
+  MineWatch.Api.Services.TelemetryParser                                 100%
+  Program                                                                  0%
+
+MineWatch.Infrastructure                                                 7.2%
+  MineWatch.Infrastructure.Data.DbSeeder                                   0%
+  MineWatch.Infrastructure.Data.MineWatchDbContext                      95.6%
+  MineWatch.Infrastructure.Data.MineWatchDbContextFactory                  0%
+  MineWatch.Infrastructure.Entities.Device                                 0%
+  MineWatch.Infrastructure.Entities.TelemetryReading                      80%
+  MineWatch.Infrastructure.Migrations.AddTelemetryReadings                 0%
+  MineWatch.Infrastructure.Migrations.InitialCreate                        0%
+  MineWatch.Infrastructure.Migrations.MakeDeviceIdNullable                 0%
+  MineWatch.Infrastructure.Migrations.MineWatchDbContextModelSnapshot      0%

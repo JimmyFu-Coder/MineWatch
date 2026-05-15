@@ -11,5 +11,5 @@ public class TelemetryReading
     public double Heading { get; set; }                                            
     public DateTime CreatedAt { get; set; }                                        
     public Guid DeviceId { get; set; }                                             
-    public Device Device { get; set; } = null!; 
+    public Device? Device { get; set; }
 }

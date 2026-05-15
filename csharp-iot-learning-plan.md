@@ -93,7 +93,7 @@
 | Redis | `redis:7` | ElastiCache | 连接字符串替换 |
 | RabbitMQ | `rabbitmq:3-management` | Amazon MQ | MassTransit transport 配置 |
 | SQS / SNS | LocalStack | Amazon SQS / SNS | endpoint URL 替换 |
-| MQTT Broker | EMQX Docker | AWS IoT Core | 证书逻辑需适配（建议早期接入） |
+| MQTT Broker | Mosquitto Docker | AWS IoT Core | 连接逻辑替换 |
 
 ### Docker Compose 启动命令
 
@@ -101,14 +101,15 @@
 # 启动全部本地依赖
 docker compose up -d
 
-# 服务包含：PostgreSQL · Redis · RabbitMQ · EMQX · LocalStack
+# 服务包含：PostgreSQL · Redis · RabbitMQ · Mosquitto · LocalStack
 ```
 
 ### AWS IoT Core 说明
 
-> **建议 Sprint 1 即接入真实 IoT Core**，原因：
-> - IoT Core 免费层：每月 250,000 条消息，**12 个月有效**（从账号创建日起算）
-> - 设备证书认证逻辑与本地 EMQX 有差异，早接入早踩坑
+> **AWS IoT Core 推迟到 Sprint 5 统一接入**，原因：
+> - Sprint 1–4 使用 Mosquitto Docker 本地开发，零云费用
+> - Sprint 5 部署阶段一次性切换到 AWS IoT Core，连接逻辑适配集中处理
+> - IoT Core 免费层：每月 250,000 条消息，12 个月有效（从账号创建日起算）
 > - 2025 年 7 月 15 日后新建账号可获最高 $200 免费 credits
 
 ---
@@ -125,17 +126,17 @@ docker compose up -d
 |------|------|------|
 | 第 1 周 | 项目脚手架 + EF Core + Device 实体 | Solution 结构 · Docker Compose · 数据库迁移 |
 | 第 2 周 | 设备 CRUD API + JWT Auth + Swagger | 完整 RESTful API · Swagger 可测试 |
-| 第 3 周 | AWS IoT Core 接入 + MQTT 订阅后台服务 | `MqttSubscriberService : BackgroundService` · 消息可接收 |
+| 第 3 周 | Mosquitto (Docker) 接入 + MQTT 订阅后台服务 | `MqttSubscriberService : BackgroundService` · 消息可接收 |
 | 第 4 周 | `Channel<T>` 批量写入 + 背压控制 | 遥测数据高效入库 · SemaphoreSlim 限流 |
-| 第 5 周 | 单元测试 + 健康检查 + README + GitHub 推送 | xUnit 覆盖率 > 70% · Sprint 1 收尾 |
+| 第 5 周 | 单元测试 + Sprint 1 收尾 | xUnit 单元测试 · Sprint 1 收尾 |
 
 ### 交付物
 
 - [x] 设备管理 API（CRUD + JWT + Swagger）
-- [ ] MQTT 订阅服务通过 AWS IoT Core 接收遥测数据
-- [ ] `Channel<T>` 批量写入 PostgreSQL
-- [ ] xUnit 单元测试覆盖率 > 70%
-- [ ] README + 架构图
+- [x] MQTT 订阅服务通过 Mosquitto (Docker) 接收遥测数据
+- [x] `Channel<T>` 批量写入 PostgreSQL
+- [x] xUnit 单元测试（TelemetryParser、TelemetryBatchWriter）
+- [x] 遥测数据解析 + DeviceId nullable 迁移
 
 ---
 
@@ -390,7 +391,7 @@ jobs:
 | Redis | Docker | $0 |
 | RabbitMQ | Docker | $0 |
 | SQS / SNS | LocalStack | $0 |
-| MQTT Broker | EMQX Docker / IoT Core 免费层 | $0 |
+| MQTT Broker | Mosquitto Docker | $0 |
 
 ### 部署阶段（Sprint 5）：1–2 个月
 

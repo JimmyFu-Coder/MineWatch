@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.Channels;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -6,16 +7,15 @@ using Microsoft.OpenApi;
 using MineWatch.Api.Middleware;
 using MineWatch.Api.Services;
 using MineWatch.Infrastructure.Data;
-using Swashbuckle.AspNetCore;   
-
+using MineWatch.Infrastructure.Entities;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 
-builder.Services.AddDbContext<MineWatchDbContext>(options =>
+builder.Services.AddDbContextFactory<MineWatchDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+builder.Services.AddSingleton(Channel.CreateBounded<TelemetryReading>(1000));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>                                          
@@ -55,6 +55,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
     });
+builder.Services.AddHostedService<MqttSubscriberService>();                        
+builder.Services.AddHostedService<TelemetryBatchWriter>();
 
 var app = builder.Build();
 if (!app.Environment.IsDevelopment())
