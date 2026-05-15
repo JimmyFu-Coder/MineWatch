@@ -30,8 +30,20 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+      
+  localstack:
+    image: localstack/localstack:3.8.1
+    container_name: minewatch-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=sqs,sns
+    volumes:
+      - localstack_data:/var/lib/localstack
+      
 
 volumes:
   postgres_data:
   mosquitto_data:
   mosquitto_logs:
+  localstack_data: 

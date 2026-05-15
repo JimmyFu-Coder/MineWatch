@@ -1,5 +1,4 @@
 using System.Text;
-using System.Threading.Channels;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -7,7 +6,8 @@ using Microsoft.OpenApi;
 using MineWatch.Api.Middleware;
 using MineWatch.Api.Services;
 using MineWatch.Infrastructure.Data;
-using MineWatch.Infrastructure.Entities;
+using Amazon.SQS;                                                                  
+using MineWatch.Api.Configuration; 
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,7 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddDbContextFactory<MineWatchDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddSingleton(Channel.CreateBounded<TelemetryReading>(1000));
+
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>                                          
@@ -43,6 +43,11 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
+builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());      
+builder.Services.AddAWSService<IAmazonSQS>();                                      
+builder.Services.AddSingleton<SqsConfig>();                                        
+builder.Services.AddHostedService<SqsBootstrapService>();
+builder.Services.AddHostedService<MqttSubscriberService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(Options =>
     Options.TokenValidationParameters = new TokenValidationParameters
@@ -55,8 +60,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
     });
-builder.Services.AddHostedService<MqttSubscriberService>();                        
-builder.Services.AddHostedService<TelemetryBatchWriter>();
+
 
 var app = builder.Build();
 if (!app.Environment.IsDevelopment())

@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.3.39" />
+    <PackageReference Include="AWSSDK.SQS" Version="4.0.2.30" />
     <PackageReference Include="coverlet.collector" Version="6.0.2" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="9.0.15" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
