@@ -32,6 +32,8 @@ TestResults/
 coverage.xml
 *.coverage
 *.coveragexml
+coverage-report/
+**/Summary.txt
 
 ## Environment / secrets
 .env

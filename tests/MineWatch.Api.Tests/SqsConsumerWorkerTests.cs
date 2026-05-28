@@ -52,7 +52,7 @@ public class SqsConsumerWorkerTests
     [Fact]
     public async Task ExecuteAsync_ValidMessages_WritesToDbAndDeletesFromSqs()
     {
-        // Arrange — 准备测试数据
+        // Arrange
         var reading = CreateReading();
         var message = new Message
         {
@@ -66,7 +66,7 @@ public class SqsConsumerWorkerTests
             Messages = new List<Message> { message }
         };
 
-        // Setup: 第一次返回消息，第二次抛 OperationCanceledException 终止循环
+        // First call returns message, second throws OperationCanceledException to terminate loop
         var callCount = 0;
         _sqsMock
             .Setup(s => s.ReceiveMessageAsync(
@@ -79,19 +79,19 @@ public class SqsConsumerWorkerTests
                 throw new OperationCanceledException();
             });
 
-        // Act — 执行
+        // Act
         var worker = new TestableSqsConsumerWorker(
             _sqsMock.Object, _sqsConfig, _dbContextFactory, _loggerMock.Object);
 
         await worker.RunExecuteAsync(CancellationToken.None);
 
-        // Assert — 验证数据库
+        // Assert — verify database write
         await using var db = _dbContextFactory.CreateDbContext();
         var saved = await db.TelemetryReadings.ToListAsync();
         Assert.Single(saved);
         Assert.Equal(reading.VehicleNo, saved[0].VehicleNo);
 
-        // Assert — 验证 SQS 删除
+        // Assert — verify SQS deletion
         _sqsMock.Verify(s => s.DeleteMessageAsync(
             It.Is<DeleteMessageRequest>(r =>
                 r.QueueUrl == _sqsConfig.QueueUrl &&

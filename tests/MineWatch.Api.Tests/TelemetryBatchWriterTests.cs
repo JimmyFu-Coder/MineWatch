@@ -110,7 +110,7 @@ public class TelemetryBatchWriterTests
     [Fact(Timeout = 5000)]
     public async Task ExecuteAsync_WhenMultipleBatches_WritesAllBatches()
     {
-        // Arrange — 12 条消息，batchSize=5，应该分 3 批：5+5+2                                
+        // Arrange — 12 messages, batchSize=5, expect 3 batches: 5+5+2                                
         var channel = Channel.CreateBounded<TelemetryReading>(1000);
         var readings = Enumerable.Range(0, 12).Select(i =>
             CreateReading($"TRUCK-{i:D3}")).ToList();
@@ -193,7 +193,7 @@ public class TelemetryBatchWriterTests
         await channel.Writer.WriteAsync(CreateReading());
         channel.Writer.Complete();
 
-        // 第一次创建 DbContext 失败，第二次成功
+        // First DbContext creation fails, second succeeds
         var dbContextFactory = CreateFailingMockDbContextFactory("BatchTest_RetrySuccess", failCount: 1);
         var logger = new Mock<ILogger<TelemetryBatchWriter>>();
         var writer = new TelemetryBatchWriter(

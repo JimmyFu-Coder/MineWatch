@@ -1,9 +1,7 @@
 using TruckMocker.Models;
 using TruckMocker.Services;
-using TruckMocker.Models;
-using TruckMocker.Services;
 
-  // 1. 配置
+  // 1. Configure
   var config = new SimulationConfig
   {
       VehicleCount = 5,
@@ -21,17 +19,17 @@ using TruckMocker.Services;
                                                                                                                                 
   var mqttConfig = new MqttConfig { Server = "localhost", Port = 1883 };
 
-  // 2. 生成轨迹
+  // 2. Generate trajectory
   var generator = new TrajectoryGenerator(config);
   var records = generator.Generate();
   Console.WriteLine($"Generated {records.Count} records for {config.VehicleCount} vehicles");
                                                                                                                                 
-  // 3. 发布 MQTT
+  // 3. Publish MQTT
   await using var publisher = new MqttPublisher(mqttConfig);                                                                    
   await publisher.ConnectAsync();
   Console.WriteLine($"Connected to MQTT broker");
 
-  // 4. 循环发送
+  // 4. Send loop
   var grouped = records.GroupBy(r => r.VehicleNo).ToList();
   var totalSent = 0;
 
