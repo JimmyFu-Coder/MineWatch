@@ -52,19 +52,109 @@ Make telemetry data visible and actionable.
 **Deliverables:** Queryable telemetry API, real-time push to clients
 
 ### Milestone 2.2 — Alert Engine
-- [ ] Rule-based alert system (speed threshold, geo-fence breach, idle timeout)
-- [ ] Alert storage and query API
-- [ ] Notification channels (email via SES, SMS via SNS)
 
-**Deliverables:** Configurable alert rules, multi-channel notifications
+**Rule Types:**
+- [ ] Speed Threshold — trigger when vehicle speed exceeds limit (e.g. 120 km/h / 33.3 m/s)
+- [ ] Geo-Fence Breach — trigger when vehicle enters restricted zone (circle or polygon)
+- [ ] Idle Timeout — trigger when vehicle is stationary beyond threshold (e.g. 5 minutes)
 
-### Milestone 2.3 — Web Dashboard
+**Rule Management:**
+- [ ] Global rules (apply to all devices) and device-specific rules
+- [ ] Enable / disable rules without deletion
+- [ ] Severity levels: Low / Medium / High / Critical
+- [ ] Cooldown period per rule to prevent alert storms (same rule + device won't re-trigger within N seconds)
+
+**Alert Lifecycle:**
+- [ ] Active → Acknowledged → Resolved status flow
+- [ ] Record trigger location (lat/lon), speed, timestamp, and triggering telemetry reading ID
+- [ ] Acknowledge with operator identity tracking
+
+**Data Model:**
+- [ ] `AlertRule` entity — rule type, threshold, severity, device scope, cooldown, enabled flag
+- [ ] `Alert` entity — linked to rule + device + telemetry reading, status, message, trigger metadata
+- [ ] EF Core migration with indexes on `Alert.Status`, `Alert.DeviceId`, `Alert.TriggeredAt`, `AlertRule.IsEnabled`
+
+**API Endpoints:**
+- [ ] `POST   /api/alerts/rules` — create alert rule
+- [ ] `GET    /api/alerts/rules` — list rules (paginated)
+- [ ] `GET    /api/alerts/rules/{id}` — get rule detail
+- [ ] `PUT    /api/alerts/rules/{id}` — update rule (threshold, severity, enabled)
+- [ ] `DELETE /api/alerts/rules/{id}` — delete rule
+- [ ] `GET    /api/alerts` — query alerts (filter by status / deviceId / ruleId, paginated)
+- [ ] `GET    /api/alerts/{id}` — get alert detail
+- [ ] `POST   /api/alerts/{id}/acknowledge` — acknowledge alert with operator name
+- [ ] `POST   /api/alerts/{id}/resolve` — resolve alert
+
+**Pipeline Integration:**
+- [ ] `AlertEngine` service evaluates rules against each incoming `TelemetryReading` after DB write
+- [ ] In-memory rule cache (30s TTL) to avoid querying rules on every reading
+- [ ] In-memory idle state tracking (per-device last movement timestamp)
+- [ ] Alert evaluation failure does not block telemetry ingestion
+
+**Seed Data:**
+- [ ] 3 default rules on first run: speed limit 120 km/h, restricted zone (circle near mine coordinates), idle 5 min
+
+**Data Flow:**
+```
+TruckMocker → MQTT → SQS → SqsConsumerWorker
+                                    │
+                            (1) Write TelemetryReading to DB
+                            (2) AlertEngine.EvaluateAsync(reading)
+                                    │
+                            Write Alert records to DB
+```
+
+**Deliverables:** Configurable alert rules, automatic evaluation on telemetry ingestion, queryable alert API, alert lifecycle management
+
+### Milestone 2.3 — Notification Channels (Deferred)
+- [ ] Email via Amazon SES
+- [ ] SMS via Amazon SNS
+- [ ] WebSocket push via SignalR
+
+**Deliverables:** Multi-channel alert notifications
+
+### Milestone 2.4 — Web Dashboard
 - [ ] React / Blazor front-end
 - [ ] Live fleet map with vehicle positions
 - [ ] Alert list and acknowledgment UI
 - [ ] Device management interface
 
 **Deliverables:** Operational dashboard for fleet monitoring
+
+### Milestone 2.5 — Integration Tests & Performance Verification
+
+Prove the system works end-to-end with concrete numbers, not just unit tests.
+
+**Alert Engine Integration Tests (WebApplicationFactory + InMemory DB):**
+- [ ] Speed threshold: trigger when speed exceeds limit, no trigger when below
+- [ ] Geo-fence breach (circle): trigger inside zone, no trigger outside
+- [ ] Geo-fence breach (polygon): trigger inside polygon, no trigger outside
+- [ ] Idle timeout: trigger after N seconds stationary, no trigger when moving
+- [ ] Cooldown: duplicate alert not created within cooldown window
+- [ ] Device-specific rule: only applies to target device
+- [ ] Disabled rule: does not trigger
+- [ ] Multiple rules: all matching rules create separate alerts
+
+**AlertsController End-to-End Tests:**
+- [ ] Rule CRUD: create → read → update → delete
+- [ ] Alert query with filters: by status, by deviceId, by ruleId
+- [ ] Alert acknowledge: status changes, `acknowledgedBy` and `acknowledgedAt` set
+- [ ] Alert resolve: status changes, `resolvedAt` set
+- [ ] Authorization required on all endpoints
+
+**Performance Benchmarks (with concrete baseline assertions):**
+- [ ] AlertEngine evaluation throughput: 10,000 readings × 100 rules, measure **readings/sec** — baseline > 100/sec
+- [ ] Single evaluation latency: 1,000 iterations, measure **avg microseconds** — baseline < 5,000 μs
+- [ ] Batch telemetry write throughput: 10,000 readings in batches of 100, measure **writes/sec** — baseline > 50/sec
+- [ ] Alert query performance: 10,000 alerts in DB, paginated query, measure **query time ms** — baseline < 500 ms
+
+**Test Infrastructure:**
+- [ ] `MineWatch.IntegrationTests` project (xUnit + WebApplicationFactory + EF InMemory)
+- [ ] `TestAuthHandler` to bypass JWT in integration tests
+- [ ] `CustomWebApplicationFactory` that replaces DB + removes hosted services
+- [ ] Update CI pipeline to run integration tests
+
+**Deliverables:** Integration test suite with 15+ test cases, 4 performance benchmarks with published numbers, CI integration
 
 ---
 

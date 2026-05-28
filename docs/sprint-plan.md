@@ -171,22 +171,31 @@ Before:                          After:
 
 ---
 
-### Day 11: Alert Engine
+### Day 11: Alert Engine — Data Layer & Core Service
 
 | Task | Files | Deliverable |
 |------|-------|-------------|
-| Create AlertRule entity | `Entities/AlertRule.cs` | Rule configuration (type, threshold, vehicleId) |
-| Create Alert entity | `Entities/Alert.cs` | Alert record (rule, triggeredAt, status) |
-| Create AlertEngine service | `Services/AlertEngine.cs` | Evaluates telemetry against rules |
-| Wire AlertEngine into Worker pipeline | After telemetry write | Rules evaluated on every incoming reading |
-| Create AlertsController | `Controllers/AlertsController.cs` | CRUD rules + query alerts |
-| Add DB migration for AlertRule + Alert tables | `Migrations/` | New tables |
+| Create `AlertRule` entity with enums | `src/MineWatch.Infrastructure/Entities/AlertRule.cs` | `AlertRuleType` (Speed/GeoFence/Idle), `AlertSeverity` (Low/Med/High/Critical), threshold string, cooldown, device scope |
+| Create `Alert` entity with enums | `src/MineWatch.Infrastructure/Entities/Alert.cs` | `AlertStatus` (Active/Acknowledged/Resolved), trigger metadata (lat/lon/speed), FK to rule + device + telemetry reading |
+| Update `MineWatchDbContext` | `src/MineWatch.Infrastructure/Data/MineWatchDbContext.cs` | `DbSet<AlertRule>`, `DbSet<Alert>`, indexes on Status/DeviceId/TriggeredAt/IsEnabled |
+| Run EF Core migration | `src/MineWatch.Infrastructure/Migrations/` | `AddAlertSystem` migration creating AlertRules + Alerts tables |
+| Create `GeoFenceSpec` + `GeoHelper` | `src/MineWatch.Api/Services/AlertEngine/` | Haversine distance, point-in-polygon, threshold JSON types |
+| Create `IAlertEngine` + `AlertEngine` | `src/MineWatch.Api/Services/AlertEngine/AlertEngine.cs` | Evaluate speed/geo/idle rules, in-memory rule cache (30s TTL), idle state tracking, cooldown check |
+| Create `AlertDTOs` | `src/MineWatch.Api/DTOs/AlertDTOs.cs` | CreateAlertRuleRequest, UpdateAlertRuleRequest, AlertRuleResponse, AlertResponse, AcknowledgeAlertRequest |
+| Create `IAlertService` + `AlertService` | `src/MineWatch.Api/Services/AlertService.cs` | Rule CRUD, alert query (filter by status/device/rule), acknowledge, resolve |
+| Create `AlertsController` | `src/MineWatch.Api/Controllers/AlertsController.cs` | 9 endpoints: rules CRUD (5) + alerts query/acknowledge/resolve (4) |
+| Update `DbSeeder` | `src/MineWatch.Infrastructure/Data/DbSeeder.cs` | 3 seed rules: speed limit 120 km/h, restricted zone circle, idle 5 min |
+| Wire into `SqsConsumerWorker` | `src/MineWatch.Api/Services/SqsConsumerWorker.cs` | Call `alertEngine.EvaluateAsync(reading)` after DB write, wrapped in try-catch |
+| Register in DI | `src/MineWatch.Api/Program.cs` | `AddSingleton<IAlertEngine, AlertEngine>()`, `AddScoped<IAlertService, AlertService>()` |
 
 **Sprint 2 Deliverables — Day 11:**
-- [ ] Alert rule CRUD API
-- [ ] Automatic rule evaluation on telemetry ingestion
-- [ ] Alert records stored and queryable
-- [ ] Built-in rules: speed threshold, idle timeout, geo-fence breach
+- [ ] AlertRule + Alert entities with EF Core migration
+- [ ] AlertEngine evaluates speed / geo-fence / idle rules on every telemetry reading
+- [ ] Rule caching (30s TTL) and idle state tracking in-memory
+- [ ] Cooldown mechanism prevents alert storms
+- [ ] 9 REST endpoints for rule management and alert lifecycle
+- [ ] 3 default seed rules for demo
+- [ ] Alert evaluation failure does not block telemetry ingestion
 
 ---
 
@@ -207,13 +216,36 @@ Before:                          After:
 
 ---
 
-### Day 13-14: Buffer & Final Polish
+### Day 13: Integration Tests & Performance Verification
+
+| Task | Files | Deliverable |
+|------|-------|-------------|
+| Create `MineWatch.IntegrationTests` project | `tests/MineWatch.IntegrationTests/MineWatch.IntegrationTests.csproj` | xUnit + WebApplicationFactory + EF InMemory + Moq |
+| Create `CustomWebApplicationFactory` | `tests/MineWatch.IntegrationTests/CustomWebApplicationFactory.cs` | Replaces DB with InMemory, removes MQTT/SQS hosted services |
+| Create `TestAuthHandler` | `tests/MineWatch.IntegrationTests/Infrastructure/TestAuthHandler.cs` | Auto-authenticates all requests in test environment |
+| AlertEngine integration tests | `tests/MineWatch.IntegrationTests/AlertEngineIntegrationTests.cs` | 10 test cases: speed trigger/no-trigger, geo-fence circle/polygon trigger/no-trigger, idle trigger/no-trigger, cooldown, device-specific rule, disabled rule, multiple rules |
+| AlertsController e2e tests | `tests/MineWatch.IntegrationTests/AlertsControllerTests.cs` | 6 test cases: rule CRUD, alert query with filters, acknowledge, resolve |
+| Performance: AlertEngine throughput | `tests/MineWatch.IntegrationTests/PerformanceTests.cs` | 10,000 readings × 100 rules → assert **> 100 readings/sec** |
+| Performance: single evaluation latency | Same file | 1,000 iterations → assert **< 5,000 μs avg** |
+| Performance: batch write throughput | Same file | 10,000 readings in batches of 100 → assert **> 50 writes/sec** |
+| Performance: alert query speed | Same file | 10,000 alerts, paginated query → assert **< 500 ms** |
+| Update CI pipeline | `.github/workflows/ci.yml` | Add `dotnet test` for IntegrationTests project |
+| Add to solution | `MineWatch.sln` | New project registered |
+
+**Sprint 2 Deliverables — Day 13:**
+- [ ] 16+ integration test cases covering all alert scenarios
+- [ ] 4 performance benchmarks with concrete QPS/latency numbers
+- [ ] CI pipeline runs integration tests on every push
+- [ ] Test infrastructure reusable for future controller tests
+
+---
+
+### Day 14: Final Polish
 
 | Task | Deliverable |
 |------|-------------|
-| Fill remaining test gaps | Coverage pushes toward 60%+ |
 | `dotnet format` entire solution | Consistent code style |
-| End-to-end verification | All features work together |
+| End-to-end verification | All features work together via TruckMocker → API → alerts |
 | Final commit cleanup | Clean git history |
 
 ---
@@ -226,6 +258,8 @@ Before:                          After:
 | User auth system | Register → Login → Access protected endpoint |
 | Real-time telemetry | SignalR client receives live updates |
 | Alert engine | Create rule → trigger alert → query alert record |
+| Integration tests | 16+ test cases, all passing in CI |
+| Performance benchmarks | AlertEngine > 100 reads/sec, query < 500ms |
 | Production documentation | README, ROADMAP, CHANGELOG all accurate |
 
 ---
