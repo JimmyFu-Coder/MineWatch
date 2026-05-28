@@ -24,7 +24,7 @@ public class AuthController(IConfiguration configuration) :  ControllerBase
         var claims = new[]
         {
             new Claim(ClaimTypes.Name, request.Username),
-            new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()),
+            new Claim(ClaimTypes.NameIdentifier, request.Username),
         };
         var jwtKey = configuration["Jwt:Key"]                                              
                      ?? throw new InvalidOperationException("Jwt:Key is not configured");
@@ -35,7 +35,7 @@ public class AuthController(IConfiguration configuration) :  ControllerBase
             issuer: configuration["Jwt:Issuer"],
             audience: configuration["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.Now.AddMinutes(30),
+            expires: DateTime.UtcNow.AddMinutes(30),
             signingCredentials: credentials
         );
         var tokenString = new JwtSecurityTokenHandler().WriteToken(token);

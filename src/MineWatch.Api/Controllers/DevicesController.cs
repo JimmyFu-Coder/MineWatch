@@ -15,7 +15,10 @@ public class DevicesController(IDeviceService deviceService) : ControllerBase
     public async Task<IActionResult> GetAllAsync([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
     {
         var (items, total) = await deviceService.GetAllAsync(page, pageSize);
-        return Ok(new { items, total });
+        var response = new PageResponse<DeviceResponse>(
+            items.Select(d => new DeviceResponse(d.Id, d.Name, d.Type, d.Status, d.CreatedAt, d.UpdatedAt)).ToList(),
+            total, page, pageSize);
+        return Ok(response);
     }
     
     [HttpGet("{id:guid}")]

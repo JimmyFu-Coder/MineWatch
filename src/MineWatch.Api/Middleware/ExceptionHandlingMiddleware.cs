@@ -24,7 +24,7 @@ public class ExceptionHandlingMiddleware
             _logger.LogError(ex, "Exception caught in middleware");
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
             var traceId = Activity.Current?.Id ?? context.TraceIdentifier;
-            await context.Response.WriteAsJsonAsync(new ErrorResponse("An error occurred", context.Response.StatusCode));
+            await context.Response.WriteAsJsonAsync(new ErrorResponse("An error occurred", context.Response.StatusCode, traceId));
         }
     }
 }

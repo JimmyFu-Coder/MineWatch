@@ -1,4 +1,5 @@
 using System.Text;
+using System.Threading.Channels;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -6,7 +7,8 @@ using Microsoft.OpenApi;
 using MineWatch.Api.Middleware;
 using MineWatch.Api.Services;
 using MineWatch.Infrastructure.Data;
-using Amazon.SQS;                                                                  
+using MineWatch.Infrastructure.Entities;
+using Amazon.SQS;
 using MineWatch.Api.Configuration; 
 
 
@@ -45,9 +47,14 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());      
 builder.Services.AddAWSService<IAmazonSQS>();                                      
-builder.Services.AddSingleton<SqsConfig>();                                        
+builder.Services.AddSingleton<SqsConfig>();
+builder.Services.AddSingleton(Channel.CreateBounded<TelemetryReading>(new BoundedChannelOptions(1000)
+{
+    FullMode = BoundedChannelFullMode.DropOldest
+}));
 builder.Services.AddHostedService<SqsBootstrapService>();
 builder.Services.AddHostedService<MqttSubscriberService>();
+builder.Services.AddHostedService<TelemetryBatchWriter>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(Options =>
     Options.TokenValidationParameters = new TokenValidationParameters
@@ -63,13 +70,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 
 
 var app = builder.Build();
-if (!app.Environment.IsDevelopment())
-{                                    
-    using var scope = app.Services.CreateScope();
+
+using (var scope = app.Services.CreateScope())
+{
     var dbContext = scope.ServiceProvider.GetRequiredService<MineWatchDbContext>();
-    await dbContext.Database.MigrateAsync();                                                                    
+    await dbContext.Database.MigrateAsync();
     await DbSeeder.SeedAsync(dbContext);
-} 
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

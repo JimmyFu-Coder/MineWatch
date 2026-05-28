@@ -1,17 +1,17 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using MineWatch.Api.Configuration;
-using MineWatch.Infrastructure.Data;
 using MineWatch.Infrastructure.Entities;
 using System.Text.Json;
+using System.Threading.Channels;
 
 namespace MineWatch.Api.Services;
 
 public class SqsConsumerWorker(
     IAmazonSQS sqsClient,
     SqsConfig sqsConfig,
-    IDbContextFactory<MineWatchDbContext> dbContextFactory,
+    Channel<TelemetryReading> channel,
     ILogger<SqsConsumerWorker> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -30,14 +30,13 @@ public class SqsConsumerWorker(
                 foreach (var message in response.Messages)
                 {
                     var reading = JsonSerializer.Deserialize<TelemetryReading>(message.Body);
-                    if (reading is null)                                                                                
+                    if (reading is null)
                     {
-                        logger.LogWarning("Failed to deserialize message {MessageId}", message.MessageId);              
-                        continue;                                             
+                        logger.LogWarning("Failed to deserialize message {MessageId}", message.MessageId);
+                        continue;
                     }
-                    await using var db = dbContextFactory.CreateDbContext();
-                    db.TelemetryReadings.Add(reading);
-                    await db.SaveChangesAsync(stoppingToken);
+
+                    await channel.Writer.WriteAsync(reading, stoppingToken);
 
                     await sqsClient.DeleteMessageAsync(new DeleteMessageRequest
                     {

@@ -1,13 +1,12 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MineWatch.Api.Configuration;
 using MineWatch.Api.Services;
-using MineWatch.Infrastructure.Data;
 using MineWatch.Infrastructure.Entities;
 using Moq;
 using System.Text.Json;
+using System.Threading.Channels;
 
 namespace MineWatch.Api.Tests;
 
@@ -15,7 +14,6 @@ public class SqsConsumerWorkerTests
 {
     private readonly Mock<IAmazonSQS> _sqsMock;
     private readonly SqsConfig _sqsConfig;
-    private readonly IDbContextFactory<MineWatchDbContext> _dbContextFactory;
     private readonly Mock<ILogger<SqsConsumerWorker>> _loggerMock;
 
     public SqsConsumerWorkerTests()
@@ -27,11 +25,6 @@ public class SqsConsumerWorkerTests
             DlqUrl = "http://test-dlq"
         };
         _loggerMock = new Mock<ILogger<SqsConsumerWorker>>();
-
-        var options = new DbContextOptionsBuilder<MineWatchDbContext>()
-            .UseInMemoryDatabase("TestDb_" + Guid.NewGuid())
-            .Options;
-        _dbContextFactory = new TestDbContextFactory(options);
     }
 
     private static TelemetryReading CreateReading(string vehicleNo = "TRUCK-001")
@@ -50,7 +43,7 @@ public class SqsConsumerWorkerTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ValidMessages_WritesToDbAndDeletesFromSqs()
+    public async Task ExecuteAsync_ValidMessages_WritesToChannelAndDeletesFromSqs()
     {
         // Arrange
         var reading = CreateReading();
@@ -66,7 +59,6 @@ public class SqsConsumerWorkerTests
             Messages = new List<Message> { message }
         };
 
-        // First call returns message, second throws OperationCanceledException to terminate loop
         var callCount = 0;
         _sqsMock
             .Setup(s => s.ReceiveMessageAsync(
@@ -79,17 +71,17 @@ public class SqsConsumerWorkerTests
                 throw new OperationCanceledException();
             });
 
+        var channel = Channel.CreateBounded<TelemetryReading>(100);
+
         // Act
         var worker = new TestableSqsConsumerWorker(
-            _sqsMock.Object, _sqsConfig, _dbContextFactory, _loggerMock.Object);
+            _sqsMock.Object, _sqsConfig, channel, _loggerMock.Object);
 
         await worker.RunExecuteAsync(CancellationToken.None);
 
-        // Assert — verify database write
-        await using var db = _dbContextFactory.CreateDbContext();
-        var saved = await db.TelemetryReadings.ToListAsync();
-        Assert.Single(saved);
-        Assert.Equal(reading.VehicleNo, saved[0].VehicleNo);
+        // Assert — verify reading was written to channel
+        Assert.True(channel.Reader.TryRead(out var writtenReading));
+        Assert.Equal(reading.VehicleNo, writtenReading.VehicleNo);
 
         // Assert — verify SQS deletion
         _sqsMock.Verify(s => s.DeleteMessageAsync(
@@ -104,14 +96,8 @@ public class SqsConsumerWorkerTests
 internal class TestableSqsConsumerWorker(
     IAmazonSQS sqsClient,
     SqsConfig sqsConfig,
-    IDbContextFactory<MineWatchDbContext> dbContextFactory,
-    ILogger<SqsConsumerWorker> logger) : SqsConsumerWorker(sqsClient, sqsConfig, dbContextFactory, logger)
+    Channel<TelemetryReading> channel,
+    ILogger<SqsConsumerWorker> logger) : SqsConsumerWorker(sqsClient, sqsConfig, channel, logger)
 {
     public Task RunExecuteAsync(CancellationToken ct) => ExecuteAsync(ct);
-}
-
-internal class TestDbContextFactory(DbContextOptions<MineWatchDbContext> options) :
-    IDbContextFactory<MineWatchDbContext>
-{
-    public MineWatchDbContext CreateDbContext() => new(options);
 }
