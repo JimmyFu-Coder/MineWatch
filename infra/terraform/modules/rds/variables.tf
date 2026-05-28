@@ -15,7 +15,7 @@ variable "subnet_ids" {
 }
 
 variable "security_group_ids" {
-  description = "Security group IDs for the RDS instance"
+  description = "Security group IDs for the Aurora cluster"
   type        = list(string)
 }
 
@@ -36,28 +36,16 @@ variable "password" {
   sensitive   = true
 }
 
-variable "instance_class" {
-  description = "RDS instance class"
-  type        = string
-  default     = "db.t4g.micro"
-}
-
-variable "allocated_storage" {
-  description = "Initial storage allocation in GB"
+variable "min_capacity" {
+  description = "Minimum Aurora Serverless v2 capacity in ACU"
   type        = number
-  default     = 20
+  default     = 0.5
 }
 
-variable "max_allocated_storage" {
-  description = "Maximum storage for autoscaling in GB"
+variable "max_capacity" {
+  description = "Maximum Aurora Serverless v2 capacity in ACU"
   type        = number
-  default     = 50
-}
-
-variable "multi_az" {
-  description = "Enable Multi-AZ deployment"
-  type        = bool
-  default     = false
+  default     = 2
 }
 
 variable "backup_retention_period" {

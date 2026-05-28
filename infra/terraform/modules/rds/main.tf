@@ -5,31 +5,40 @@ resource "aws_db_subnet_group" "main" {
   tags = merge(var.tags, { Name = "${var.name_prefix}-db-subnet-group" })
 }
 
-resource "aws_db_instance" "postgres" {
-  identifier     = "${var.name_prefix}-postgres"
-  engine         = "postgres"
-  engine_version = "16"
-  instance_class = var.instance_class
+resource "aws_rds_cluster" "aurora" {
+  cluster_identifier              = "${var.name_prefix}-aurora"
+  engine                          = "aurora-postgresql"
+  engine_version                  = "16.6"
+  database_name                   = var.db_name
+  master_username                 = var.username
+  master_password                 = var.password
+  manage_master_user_password     = false
 
-  allocated_storage     = var.allocated_storage
-  max_allocated_storage = var.max_allocated_storage
-  storage_type          = "gp3"
-  storage_encrypted     = true
+  vpc_security_group_ids          = var.security_group_ids
+  db_subnet_group_name            = aws_db_subnet_group.main.name
 
-  db_name  = var.db_name
-  username = var.username
-  password = var.password
+  storage_encrypted               = true
+  deletion_protection             = true
+  skip_final_snapshot             = false
+  final_snapshot_identifier       = "${var.name_prefix}-final-snapshot"
 
-  vpc_security_group_ids = var.security_group_ids
-  db_subnet_group_name   = aws_db_subnet_group.main.name
+  backup_retention_period         = var.backup_retention_period
 
-  multi_az               = var.multi_az
-  publicly_accessible    = false
-  deletion_protection    = true
-  skip_final_snapshot    = false
-  final_snapshot_identifier = "${var.name_prefix}-final-snapshot"
+  serverlessv2_scaling_configuration {
+    min_capacity = var.min_capacity
+    max_capacity = var.max_capacity
+  }
 
-  backup_retention_period = var.backup_retention_period
+  tags = merge(var.tags, { Name = "${var.name_prefix}-aurora-cluster" })
+}
 
-  tags = merge(var.tags, { Name = "${var.name_prefix}-postgres" })
+resource "aws_rds_cluster_instance" "main" {
+  cluster_identifier  = aws_rds_cluster.aurora.id
+  identifier          = "${var.name_prefix}-aurora-instance"
+  instance_class      = "db.serverless"
+  engine              = aws_rds_cluster.aurora.engine
+  engine_version      = aws_rds_cluster.aurora.engine_version
+  publicly_accessible = false
+
+  tags = merge(var.tags, { Name = "${var.name_prefix}-aurora-instance" })
 }
