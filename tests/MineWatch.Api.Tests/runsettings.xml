@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Exclude>[MineWatch.Api]MineWatch.Api.DTOs.*,[MineWatch.Api]MineWatch.Api.Middleware.*,[MineWatch.Api]MineWatch.Api.Controllers.*,[MineWatch.Api]MineWatch.Api.Program,[MineWatch.Infrastructure]MineWatch.Infrastructure.Entities.*,[MineWatch.Infrastructure]MineWatch.Infrastructure.Migrations.*,[MineWatch.Infrastructure]MineWatch.Infrastructure.Data.DbSeeder,[MineWatch.Infrastructure]MineWatch.Infrastructure.Data.MineWatchDbContextFactory</Exclude>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>

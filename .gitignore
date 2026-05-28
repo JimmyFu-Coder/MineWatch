@@ -1,0 +1,44 @@
+## Build outputs
+bin/
+obj/
+out/
+publish/
+
+## NuGet
+packages/
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## IDE
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+## .NET runtime
+*.pid
+*.seed
+*.pid.lock
+
+## Test results
+TestResults/
+*.trx
+coverage.xml
+*.coverage
+*.coveragexml
+
+## Environment / secrets
+.env
+.env.local
+*.env
+
+## OS
+.DS_Store
+Thumbs.db
+desktop.ini
