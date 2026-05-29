@@ -54,6 +54,7 @@ builder.Services.AddSingleton(Channel.CreateBounded<TelemetryReading>(new Bounde
 }));
 builder.Services.AddHostedService<SqsBootstrapService>();
 builder.Services.AddHostedService<MqttSubscriberService>();
+builder.Services.AddHostedService<SqsConsumerWorker>();
 builder.Services.AddHostedService<TelemetryBatchWriter>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(Options =>

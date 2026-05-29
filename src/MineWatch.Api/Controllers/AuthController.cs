@@ -16,9 +16,12 @@ public class AuthController(IConfiguration configuration) :  ControllerBase
     [HttpPost]
     public IActionResult Login(LoginRequest request)
     {
-        if (request.Username != "admin" || request.Password != "admin")
+        var validUser = configuration["Jwt:TestUser"];
+        var validPassword = configuration["Jwt:Password"];
+
+        if (request.Username != validUser || request.Password != validPassword)
         {
-            return Unauthorized(new {message = "Invalid credentials"});
+            return Unauthorized(new { message = "Invalid credentials" });
         }
 
         var claims = new[]
@@ -26,7 +29,7 @@ public class AuthController(IConfiguration configuration) :  ControllerBase
             new Claim(ClaimTypes.Name, request.Username),
             new Claim(ClaimTypes.NameIdentifier, request.Username),
         };
-        var jwtKey = configuration["Jwt:Key"]                                              
+        var jwtKey = configuration["Jwt:Key"]
                      ?? throw new InvalidOperationException("Jwt:Key is not configured");
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
