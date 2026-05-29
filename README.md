@@ -81,6 +81,12 @@ This starts the entire stack: PostgreSQL, Mosquitto, LocalStack, API (with auto-
 
 Prerequisites: .NET 9 SDK, Docker
 
+After cloning, set up the git hooks (auto-format on commit):
+
+```bash
+git config core.hooksPath .githooks
+```
+
 ```bash
 # 1. Start infrastructure only
 docker compose up -d postgres mosquitto localstack

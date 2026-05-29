@@ -1,11 +1,11 @@
+using System.Text.Json;
+using System.Threading.Channels;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MineWatch.Infrastructure.Entities;
 using MineWatch.Worker.Configuration;
-using System.Text.Json;
-using System.Threading.Channels;
 
 namespace MineWatch.Worker.Services;
 

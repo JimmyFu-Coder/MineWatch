@@ -1,12 +1,12 @@
+using System.Text.Json;
+using System.Threading.Channels;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Microsoft.Extensions.Logging;
+using MineWatch.Infrastructure.Entities;
 using MineWatch.Worker.Configuration;
 using MineWatch.Worker.Services;
-using MineWatch.Infrastructure.Entities;
 using Moq;
-using System.Text.Json;
-using System.Threading.Channels;
 
 namespace MineWatch.Api.Tests;
 
@@ -67,7 +67,8 @@ public class SqsConsumerWorkerTests
             .ReturnsAsync(() =>
             {
                 callCount++;
-                if (callCount == 1) return response;
+                if (callCount == 1)
+                    return response;
                 throw new OperationCanceledException();
             });
 

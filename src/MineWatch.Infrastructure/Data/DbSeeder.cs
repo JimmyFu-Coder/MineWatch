@@ -7,7 +7,8 @@ public static class DbSeeder
 {
     public static async Task SeedAsync(MineWatchDbContext dbContext)
     {
-        if (await dbContext.Devices.AnyAsync()) return;
+        if (await dbContext.Devices.AnyAsync())
+            return;
         var devices = new[]
         {
             new Device { Id = Guid.NewGuid(), Name = "Truck-001", Type = "Truck" },
