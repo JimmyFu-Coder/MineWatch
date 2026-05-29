@@ -1,9 +1,11 @@
-  using System.Threading.Channels;                                                           
-  using Microsoft.EntityFrameworkCore;                                                       
-  using MineWatch.Infrastructure.Data;                                                       
+  using System.Threading.Channels;
+  using Microsoft.EntityFrameworkCore;
+  using Microsoft.Extensions.Hosting;
+  using Microsoft.Extensions.Logging;
+  using MineWatch.Infrastructure.Data;
   using MineWatch.Infrastructure.Entities;                                                   
                                                                                              
-  namespace MineWatch.Api.Services;                                                          
+  namespace MineWatch.Worker.Services;                                                          
                                                                                              
   public class TelemetryBatchWriter(                                                         
       Channel<TelemetryReading> channel,

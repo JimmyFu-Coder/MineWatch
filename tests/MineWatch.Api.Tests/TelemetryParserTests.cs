@@ -1,4 +1,4 @@
-using MineWatch.Api.Services;
+using MineWatch.Worker.Services;
 
 namespace MineWatch.Api.Tests;
 

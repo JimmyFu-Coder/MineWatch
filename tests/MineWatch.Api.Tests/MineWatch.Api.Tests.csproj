@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\MineWatch.Api\MineWatch.Api.csproj" />
+    <ProjectReference Include="..\..\src\MineWatch.Worker\MineWatch.Worker.csproj" />
   </ItemGroup>
 
 </Project>

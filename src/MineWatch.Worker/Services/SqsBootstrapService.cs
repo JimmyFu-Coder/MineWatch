@@ -1,7 +1,10 @@
-using MineWatch.Api.Configuration;
-using Amazon.SQS;  
+using Amazon.SQS;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using MineWatch.Worker.Configuration;  
 
-namespace MineWatch.Api.Services;
+namespace MineWatch.Worker.Services;
 
 public class SqsBootstrapService(
     IAmazonSQS sqsClient,

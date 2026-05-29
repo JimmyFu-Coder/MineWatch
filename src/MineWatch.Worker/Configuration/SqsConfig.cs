@@ -1,4 +1,4 @@
-namespace MineWatch.Api.Configuration;
+namespace MineWatch.Worker.Configuration;
 
 public class SqsConfig
 {

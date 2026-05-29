@@ -1,7 +1,7 @@
 using System.Text.Json;
 using MineWatch.Infrastructure.Entities;
 
-namespace MineWatch.Api.Services;
+namespace MineWatch.Worker.Services;
 
 public static class TelemetryParser
 {

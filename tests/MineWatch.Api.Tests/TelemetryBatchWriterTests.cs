@@ -1,7 +1,7 @@
 using System.Threading.Channels;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using MineWatch.Api.Services;
+using MineWatch.Worker.Services;
 using MineWatch.Infrastructure.Data;
 using MineWatch.Infrastructure.Entities;
 using Moq;

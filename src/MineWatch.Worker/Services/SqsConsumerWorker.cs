@@ -1,12 +1,13 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using MineWatch.Api.Configuration;
 using MineWatch.Infrastructure.Entities;
+using MineWatch.Worker.Configuration;
 using System.Text.Json;
 using System.Threading.Channels;
 
-namespace MineWatch.Api.Services;
+namespace MineWatch.Worker.Services;
 
 public class SqsConsumerWorker(
     IAmazonSQS sqsClient,

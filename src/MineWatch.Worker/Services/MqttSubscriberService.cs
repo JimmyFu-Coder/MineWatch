@@ -2,11 +2,14 @@ using System.Buffers;
 using System.Text;
 using System.Text.Json;
 using Amazon.SQS;
-using MineWatch.Api.Configuration;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using MineWatch.Worker.Configuration;
 using MQTTnet;
 
 
-namespace MineWatch.Api.Services;
+namespace MineWatch.Worker.Services;
 
 public class MqttSubscriberService( IAmazonSQS sqsClient, IConfiguration config , ILogger<MqttSubscriberService> logger,  SqsConfig sqsConfig): BackgroundService
 {

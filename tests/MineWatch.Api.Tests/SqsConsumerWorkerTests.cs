@@ -1,8 +1,8 @@
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Microsoft.Extensions.Logging;
-using MineWatch.Api.Configuration;
-using MineWatch.Api.Services;
+using MineWatch.Worker.Configuration;
+using MineWatch.Worker.Services;
 using MineWatch.Infrastructure.Entities;
 using Moq;
 using System.Text.Json;

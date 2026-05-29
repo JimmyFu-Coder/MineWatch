@@ -1,5 +1,4 @@
 using System.Text;
-using System.Threading.Channels;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -7,9 +6,6 @@ using Microsoft.OpenApi;
 using MineWatch.Api.Middleware;
 using MineWatch.Api.Services;
 using MineWatch.Infrastructure.Data;
-using MineWatch.Infrastructure.Entities;
-using Amazon.SQS;
-using MineWatch.Api.Configuration; 
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,42 +16,31 @@ builder.Services.AddDbContextFactory<MineWatchDbContext>(options =>
 
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>                                          
-  {                                                                                  
+builder.Services.AddSwaggerGen(options =>
+  {
       options.SwaggerDoc("v1", new() { Title = "MineWatch API", Version = "v1" });
-                                                                                     
-      options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme              
-      {                                                                              
-          Name = "Authorization",                                                    
-          Description = "JWT Authorization header using the Bearer scheme.",         
-          In = ParameterLocation.Header,                                             
-          Type = SecuritySchemeType.Http,                                            
-          Scheme = "bearer",                                                         
-          BearerFormat = "JWT"                                                       
-      });                                                                            
-                                                                                     
+
+      options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+      {
+          Name = "Authorization",
+          Description = "JWT Authorization header using the Bearer scheme.",
+          In = ParameterLocation.Header,
+          Type = SecuritySchemeType.Http,
+          Scheme = "bearer",
+          BearerFormat = "JWT"
+      });
+
       options.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
       {
           {
-              new OpenApiSecuritySchemeReference("Bearer", doc),                         
-              new List<string>()                                                    
-          }                                                                              
-      });                                                                             
-  });                      
+              new OpenApiSecuritySchemeReference("Bearer", doc),
+              new List<string>()
+          }
+      });
+  });
 
 builder.Services.AddControllers();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
-builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());      
-builder.Services.AddAWSService<IAmazonSQS>();                                      
-builder.Services.AddSingleton<SqsConfig>();
-builder.Services.AddSingleton(Channel.CreateBounded<TelemetryReading>(new BoundedChannelOptions(1000)
-{
-    FullMode = BoundedChannelFullMode.DropOldest
-}));
-builder.Services.AddHostedService<SqsBootstrapService>();
-builder.Services.AddHostedService<MqttSubscriberService>();
-builder.Services.AddHostedService<SqsConsumerWorker>();
-builder.Services.AddHostedService<TelemetryBatchWriter>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(Options =>
     Options.TokenValidationParameters = new TokenValidationParameters
@@ -66,7 +51,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
     });
 
 
@@ -84,8 +69,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-app.UseMiddleware<ExceptionHandlingMiddleware>();  
-app.UseAuthentication();                                                           
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

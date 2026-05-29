@@ -40,6 +40,47 @@ services:
       - SERVICES=sqs,sns
     volumes:
       - localstack_data:/var/lib/localstack
+
+  api:
+    build:
+      context: .
+      dockerfile: src/MineWatch.Api/Dockerfile
+    container_name: minewatch-api
+    ports:
+      - "5211:5211"
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=minewatch;Username=postgres;Password=postgres
+      - Jwt__Key=minewatch-super-secret-key-12345678
+      - Jwt__Issuer=MineWatch
+      - Jwt__Audience=MineWatchAPI
+      - Jwt__TestUser=admin
+      - Jwt__Password=admin
+      - AWS__ServiceURL=http://localstack:4566
+      - AWS__Region=ap-southeast-2
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: src/MineWatch.Worker/Dockerfile
+    container_name: minewatch-worker
+    environment:
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=minewatch;Username=postgres;Password=postgres
+      - AWS__ServiceURL=http://localstack:4566
+      - AWS__Region=ap-southeast-2
+      - Sqs__QueueName=minewatch-telemetry
+      - Sqs__DLQName=minewatch-telemetry-dlq
+      - Sqs__MaxReceiveCount=3
+      - Sqs__VisibilityTimeoutSeconds=30
+      - Mqtt__Server=mosquitto
+      - Mqtt__Port=1883
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_started
       
 
 volumes:
