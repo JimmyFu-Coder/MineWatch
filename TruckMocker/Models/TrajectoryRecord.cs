@@ -5,7 +5,7 @@ namespace TruckMocker.Models;
 public class TrajectoryRecord
 {
     [Name("vehicle_no")]
-    public string VehicleNo { get; set; }
+    public string VehicleNo { get; set; } = string.Empty;
 
     [Name("timestamp")]
     public DateTime Timestamp { get; set; }
