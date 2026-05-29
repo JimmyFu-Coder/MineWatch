@@ -6,6 +6,7 @@ using Microsoft.OpenApi;
 using MineWatch.Api.Middleware;
 using MineWatch.Api.Services;
 using MineWatch.Infrastructure.Data;
+using OpenTelemetry.Metrics;
 using Serilog;
 using Serilog.Formatting.Compact;
 
@@ -66,7 +67,11 @@ try
         });
 
     builder.Services.AddHealthChecks()                                                                                            
-        .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!);    
+        .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!);  
+    builder.Services.AddOpenTelemetry()
+        .WithMetrics(metrics => metrics
+            .AddAspNetCoreInstrumentation());
+
     var app = builder.Build();
 
     using (var scope = app.Services.CreateScope())
@@ -85,7 +90,8 @@ try
     app.UseMiddleware<ExceptionHandlingMiddleware>();
     app.UseAuthentication();
     app.UseAuthorization();
-    app.MapHealthChecks("/health/ready");  
+    app.MapHealthChecks("/health/ready");
+    app.UseOpenTelemetryPrometheusScrapingEndpoint();
     app.MapControllers();
 
     app.Run();
