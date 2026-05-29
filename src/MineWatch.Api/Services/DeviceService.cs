@@ -10,11 +10,11 @@ namespace MineWatch.Api.Services;
 public interface IDeviceService
 {
     Task<Device?> GetByIdAsync(Guid id);
-    Task<(IEnumerable<Device> Items, int Total)> GetAllAsync(int page, int pageSize);      
+    Task<(IEnumerable<Device> Items, int Total)> GetAllAsync(int page, int pageSize);
     Task<Device> CreateAsync(CreateDeviceRequest request);
-    Task<Device?> UpdateAsync(Guid id, UpdateDeviceRequest request);                       
+    Task<Device?> UpdateAsync(Guid id, UpdateDeviceRequest request);
     Task<bool> DeleteAsync(Guid id);
-    
+
 }
 
 public class DeviceService(MineWatchDbContext context) : IDeviceService
@@ -23,7 +23,7 @@ public class DeviceService(MineWatchDbContext context) : IDeviceService
     {
         return await context.Devices.FindAsync(id);
     }
-    
+
     public async Task<(IEnumerable<Device> Items, int Total)> GetAllAsync(int page, int pageSize)
     {
         var query = context.Devices.AsQueryable();
@@ -31,8 +31,8 @@ public class DeviceService(MineWatchDbContext context) : IDeviceService
         var items = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
         return (items, total);
     }
-    
-    
+
+
     public async Task<Device> CreateAsync(CreateDeviceRequest request)
     {
         var device = new Device
@@ -47,7 +47,7 @@ public class DeviceService(MineWatchDbContext context) : IDeviceService
         await context.SaveChangesAsync();
         return device;
     }
-    
+
     public async Task<Device?> UpdateAsync(Guid id, UpdateDeviceRequest request)
     {
         var device = await context.Devices.FindAsync(id);
@@ -59,7 +59,7 @@ public class DeviceService(MineWatchDbContext context) : IDeviceService
         await context.SaveChangesAsync();
         return device;
     }
-    
+
     public async Task<bool> DeleteAsync(Guid id)
     {
         var device = await context.Devices.FindAsync(id);

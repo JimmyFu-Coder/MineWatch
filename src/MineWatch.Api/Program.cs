@@ -11,11 +11,11 @@ using OpenTelemetry.Metrics;
 using Serilog;
 using Serilog.Formatting.Compact;
 
-Log.Logger = new LoggerConfiguration()                                                                                        
-    .Enrich.FromLogContext()                                                                                                  
-    .Enrich.WithMachineName()                                                                                                 
-    .Enrich.WithEnvironmentName()                                                                                             
-    .WriteTo.Console(new RenderedCompactJsonFormatter())                                                                      
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .Enrich.WithMachineName()
+    .Enrich.WithEnvironmentName()
+    .WriteTo.Console(new RenderedCompactJsonFormatter())
     .CreateLogger();
 
 try
@@ -51,25 +51,25 @@ try
             }
         });
     });
-    builder.Services.AddRateLimiter(options =>                                                                                    
-    {                                                                                                                             
-        options.AddFixedWindowLimiter("fixed", opt =>                                                                             
-        {                                                                                                                         
-            opt.PermitLimit = 100;                                                                                                
-            opt.Window = TimeSpan.FromMinutes(1);                                                                                 
-        });                                                                                                                       
-    }); 
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.AddFixedWindowLimiter("fixed", opt =>
+        {
+            opt.PermitLimit = 100;
+            opt.Window = TimeSpan.FromMinutes(1);
+        });
+    });
     builder.Services.AddControllers();
     builder.Services.AddScoped<IDeviceService, DeviceService>();
-    builder.Services.AddCors(options =>                                                                                           
-    {                                                                                                                             
-        options.AddDefaultPolicy(policy =>                                                                                        
-        {                                                                                                                         
-            policy.AllowAnyOrigin()                           
-                .AllowAnyMethod()                                                                                               
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+        {
+            policy.AllowAnyOrigin()
+                .AllowAnyMethod()
                 .AllowAnyHeader();
-        });                                                                                                                       
-    }); 
+        });
+    });
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -82,8 +82,8 @@ try
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
         });
 
-    builder.Services.AddHealthChecks()                                                                                            
-        .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!);  
+    builder.Services.AddHealthChecks()
+        .AddNpgSql(builder.Configuration.GetConnectionString("DefaultConnection")!);
     builder.Services.AddOpenTelemetry()
         .WithMetrics(metrics => metrics
             .AddAspNetCoreInstrumentation());
@@ -104,8 +104,8 @@ try
     }
 
     app.UseMiddleware<ExceptionHandlingMiddleware>();
-    app.UseRateLimiter();                                                                                                         
-    app.UseCors();  
+    app.UseRateLimiter();
+    app.UseCors();
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapHealthChecks("/health/ready");

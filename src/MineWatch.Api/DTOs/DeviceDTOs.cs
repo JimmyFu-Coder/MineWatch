@@ -11,5 +11,5 @@ public record PageResponse<T>(List<T> Items, int TotalCount, int Page, int PageS
 {
     public int TotalPage => (int)Math.Ceiling((double)TotalCount / PageSize);
     public bool HasNextPage => Page < TotalPage;
-    public bool HasPreviousPage => Page > 1; 
+    public bool HasPreviousPage => Page > 1;
 }

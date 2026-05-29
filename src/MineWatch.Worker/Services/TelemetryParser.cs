@@ -5,7 +5,7 @@ namespace MineWatch.Worker.Services;
 
 public static class TelemetryParser
 {
-    public static  TelemetryReading Parse(string payload)
+    public static TelemetryReading Parse(string payload)
     {
         var json = JsonSerializer.Deserialize<JsonElement>(payload);
         return new TelemetryReading

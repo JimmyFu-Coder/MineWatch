@@ -2,7 +2,7 @@ using Amazon.SQS;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using MineWatch.Worker.Configuration;  
+using MineWatch.Worker.Configuration;
 
 namespace MineWatch.Worker.Services;
 
@@ -55,6 +55,6 @@ public class SqsBootstrapService(
         logger.LogInformation("Set redrive policy: maxReceiveCount={MaxReceiveCount}",
             maxReceiveCount);
     }
-    
-    public Task StopAsync(CancellationToken cancellationToken) =>  Task.CompletedTask;
+
+    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }

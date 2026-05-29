@@ -155,9 +155,9 @@ public class TelemetryBatchWriterTests
         var writer = new TelemetryBatchWriter(
             channel, dbContextFactory.Object, logger.Object,
             batchSize: 100, batchTimeout: TimeSpan.FromMilliseconds(300));
-        await writer.StartAsync(cts.Token);                                            
-        await Task.Delay(800);                                                         
-        cts.Cancel();                                                                  
+        await writer.StartAsync(cts.Token);
+        await Task.Delay(800);
+        cts.Cancel();
         await Task.Delay(800);
         var options = new DbContextOptionsBuilder<MineWatchDbContext>()
             .UseInMemoryDatabase("BatchTest_Cancelled").Options;
@@ -215,7 +215,7 @@ public class TelemetryBatchWriterTests
     {
         var channel = Channel.CreateBounded<TelemetryReading>(1000);
         await channel.Writer.WriteAsync(CreateReading());
-        
+
         var dbContextFactory = CreateFailingMockDbContextFactory("BatchTest_RetryFail", failCount: 10);
         var logger = new Mock<ILogger<TelemetryBatchWriter>>();
         var writer = new TelemetryBatchWriter(
@@ -223,32 +223,32 @@ public class TelemetryBatchWriterTests
             batchSize: 100, batchTimeout: TimeSpan.FromMilliseconds(200));
 
         await writer.StartAsync(CancellationToken.None);
-        
+
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => writer.ExecuteTask!);
         Assert.Equal("Simulated DB failure", ex.Message);
     }
-    
+
     [Fact(Timeout = 5000)]
     public async Task ExecuteAsync_WhenChannelClosedAfterOneItem_WritesSingleItem()
     {
-        var channel = Channel.CreateBounded<TelemetryReading>(1000);    
-        await channel.Writer.WriteAsync(CreateReading("TRUCK-001"));                   
-        channel.Writer.Complete();  
+        var channel = Channel.CreateBounded<TelemetryReading>(1000);
+        await channel.Writer.WriteAsync(CreateReading("TRUCK-001"));
+        channel.Writer.Complete();
         var dbContextFactory = CreateMockDbContextFactory("BatchTest_OneItem_Cancelled");
         var logger = new Mock<ILogger<TelemetryBatchWriter>>();
         var writer = new TelemetryBatchWriter(
             channel, dbContextFactory.Object, logger.Object,
             batchSize: 100, batchTimeout: TimeSpan.FromMilliseconds(1000));
-        await writer.StartAsync(CancellationToken.None);                               
-        await Task.Delay(800); 
+        await writer.StartAsync(CancellationToken.None);
+        await Task.Delay(800);
         var options = new DbContextOptionsBuilder<MineWatchDbContext>()
             .UseInMemoryDatabase("BatchTest_OneItem_Cancelled").Options;
         using var dbContext = new MineWatchDbContext(options);
         var saved = await dbContext.TelemetryReadings.ToListAsync();
         Assert.Single(saved);
-        dbContextFactory.Verify(                                                           
-            f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()),                    
+        dbContextFactory.Verify(
+            f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()),
             Times.Once());
     }
 }

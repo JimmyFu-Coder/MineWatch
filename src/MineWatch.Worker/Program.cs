@@ -12,10 +12,10 @@ using Serilog;
 using Serilog.Formatting.Compact;
 
 
-Log.Logger = new LoggerConfiguration()                                                                                        
-    .Enrich.FromLogContext()                                                                                                  
-    .Enrich.WithMachineName()                                                                                                 
-    .Enrich.WithEnvironmentName()                         
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .Enrich.WithMachineName()
+    .Enrich.WithEnvironmentName()
     .WriteTo.Console(new RenderedCompactJsonFormatter())
     .CreateLogger();
 try
@@ -34,9 +34,9 @@ try
         services.AddSingleton<SqsConfig>();
         services.AddSingleton(Channel.CreateBounded<TelemetryReading>(new
             BoundedChannelOptions(1000)
-            {
-                FullMode = BoundedChannelFullMode.DropOldest
-            }));
+        {
+            FullMode = BoundedChannelFullMode.DropOldest
+        }));
 
         services.AddHostedService<SqsBootstrapService>();
         services.AddHostedService<MqttSubscriberService>();
@@ -49,9 +49,9 @@ try
 }
 catch (Exception ex)
 {
-    Log.Fatal(ex, "Application terminated unexpectedly");   
+    Log.Fatal(ex, "Application terminated unexpectedly");
 }
 finally
 {
-    Log.CloseAndFlush();   
+    Log.CloseAndFlush();
 }

@@ -7,11 +7,11 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace MineWatch.Api.Controllers;
 
-public record LoginRequest(string Username, string Password);  
+public record LoginRequest(string Username, string Password);
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(IConfiguration configuration) :  ControllerBase
+public class AuthController(IConfiguration configuration) : ControllerBase
 {
     [HttpPost]
     public IActionResult Login(LoginRequest request)
