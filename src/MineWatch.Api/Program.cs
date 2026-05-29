@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -50,10 +51,25 @@ try
             }
         });
     });
-
+    builder.Services.AddRateLimiter(options =>                                                                                    
+    {                                                                                                                             
+        options.AddFixedWindowLimiter("fixed", opt =>                                                                             
+        {                                                                                                                         
+            opt.PermitLimit = 100;                                                                                                
+            opt.Window = TimeSpan.FromMinutes(1);                                                                                 
+        });                                                                                                                       
+    }); 
     builder.Services.AddControllers();
     builder.Services.AddScoped<IDeviceService, DeviceService>();
-
+    builder.Services.AddCors(options =>                                                                                           
+    {                                                                                                                             
+        options.AddDefaultPolicy(policy =>                                                                                        
+        {                                                                                                                         
+            policy.AllowAnyOrigin()                           
+                .AllowAnyMethod()                                                                                               
+                .AllowAnyHeader();
+        });                                                                                                                       
+    }); 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
         options.TokenValidationParameters = new TokenValidationParameters
         {
@@ -88,12 +104,13 @@ try
     }
 
     app.UseMiddleware<ExceptionHandlingMiddleware>();
+    app.UseRateLimiter();                                                                                                         
+    app.UseCors();  
     app.UseAuthentication();
     app.UseAuthorization();
     app.MapHealthChecks("/health/ready");
     app.UseOpenTelemetryPrometheusScrapingEndpoint();
     app.MapControllers();
-
     app.Run();
 }
 catch (Exception e)
