@@ -18,10 +18,12 @@
 | Remove empty placeholder test projects | `MineWatch.UnitTests/`, `MineWatch.Infrastructure.Tests/` | No dead test projects |
 
 **Sprint 1 Deliverables — Day 1-2:**
-- [ ] All code bugs fixed and verified by tests
-- [ ] Zero dead code in the solution
-- [ ] Consistent error response format with TraceId
-- [ ] Paginated API responses using proper DTO
+- [x] All code bugs fixed and verified by tests
+- [x] Zero dead code in the solution
+- [x] Consistent error response format with TraceId
+- [x] Paginated API responses using proper DTO
+- [x] AuthController credentials driven by configuration (Jwt:TestUser / Jwt:Password)
+- [x] SqsConsumerWorker registered in DI (pipeline was broken — MQTT → SQS → Channel → DB now complete)
 
 ---
 
@@ -51,6 +53,8 @@ Before:                          After:
 | Update API Program.cs | Remove all BackgroundService registrations | API only handles HTTP |
 | Update solution file | `MineWatch.sln` | All 4 projects registered |
 | Add Worker ECS task + ECR to Terraform | `infra/terraform/` | Worker deployable independently |
+
+**Deployment Decision — ECS Fargate:** See [ADR-001](adr/001-deployment-target.md). Both services target ECS Fargate. API can migrate to Lambda when cost justifies.
 
 **Sprint 1 Deliverables — Day 3-4:**
 - [ ] `MineWatch.Api` — REST API only, no background processing
