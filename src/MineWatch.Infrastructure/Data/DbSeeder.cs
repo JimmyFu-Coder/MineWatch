@@ -27,7 +27,7 @@ public static class DbSeeder
               Name = "Speed Limit - Trucks",
               RuleType = AlertRuleType.Speed,
               Severity = AlertSeverity.High,
-              Threshold = 11.11,  // 40 km/h in m/s
+              SpeedThreshold = 40,  // 40 km/h
               DeviceType = "Truck",
               CoolDownSeconds = 300,
               IsEnabled = true,
@@ -39,8 +39,8 @@ public static class DbSeeder
               Name = "Restricted Zone - Office Area",
               RuleType = AlertRuleType.GeoFence,
               Severity = AlertSeverity.Critical,
-              GeoFenceSpec = """{"type":"circle","centerLat":-31.95,"centerLon":115.86,"radiusMeters":300}""",
-              DeviceType = null,  // applies to all
+              GeoFenceSpec = """{"type":"circle","mode":"outside","center":[-31.95,115.86],"radius":300,"points":null}""",
+              DeviceType = null,
               CoolDownSeconds = 0,
               IsEnabled = true,
               CreatedAt = DateTime.UtcNow
@@ -51,7 +51,8 @@ public static class DbSeeder
               Name = "Idle Timeout - Trucks",
               RuleType = AlertRuleType.Idle,
               Severity = AlertSeverity.Medium,
-              Threshold = 300,  // 5 minutes
+              IdleSpeedThreshold = 2,  // speed below 2 km/h counts as idle
+              IdleDurationSeconds = 300,  // 5 minutes
               DeviceType = "Truck",
               CoolDownSeconds = 600,
               IsEnabled = true,

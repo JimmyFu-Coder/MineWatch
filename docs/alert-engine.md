@@ -122,6 +122,62 @@ To add a new rule type: implement `IRuleEvaluator` + register in DI. No changes 
 | Restricted Zone - Office Area | GeoFence | 300m radius circle | All | 0s |
 | Idle Timeout - Trucks | Idle | 300s (5 min) | Truck | 600s |
 
+## Concurrency: Device-Partitioned Dispatch
+
+### Problem
+
+Multiple SQS consumer threads process readings concurrently. Evaluators like `IdleRuleEvaluator` hold per-device state (`_lastActiveTime`). If two threads evaluate the same device simultaneously, the state can be corrupted (check-then-act race).
+
+### Solution: Channel-Based Partitioning
+
+Partition readings by `DeviceId` into fixed `Channel<TelemetryReading>` slots. Each channel has one dedicated consumer task, guaranteeing **same-device → same-thread → sequential processing**.
+
+```
+SQS Consumer (multiple threads)
+       │
+       │ receive TelemetryReading
+       ▼
+  DeviceDispatcher
+       │
+       │  channels[deviceId.GetHashCode() % N]
+       ▼
+  ┌─────────────────────────────────────────┐
+  │ Channel[0]  Channel[1]  ...  Channel[N] │  N = 16 (or ProcessorCount)
+  │    │           │                │        │
+  │  Consumer    Consumer         Consumer   │  one Task per channel
+  │    │           │                │        │
+  │  Engine      Engine           Engine     │  each has its own evaluator instances
+  └─────────────────────────────────────────┘
+       │           │                │
+       ▼           ▼                ▼
+    Write Alerts to DB (no contention on evaluator state)
+```
+
+### Design Decisions
+
+| Decision | Rationale |
+|----------|-----------|
+| Fixed channel count (N=16) | No dynamic mapping to maintain; hash % N is stable within a process lifetime |
+| No cross-process coordination | Single process; restart clears in-memory state anyway, re-hashing is fine |
+| One AlertEngine instance per channel | Each engine owns its evaluators, no shared mutable state between channels |
+| `Channel<TelemetryReading>` (unbounded) | Backpressure handled at SQS visibility timeout level, not in-process |
+
+### Implications for Evaluators
+
+With per-device sequential guarantee, evaluators no longer need `ConcurrentDictionary`:
+- `IdleRuleEvaluator._lastActiveTime` → `Dictionary<Guid, DateTime>`
+- `AlertEngine._lastAlertByRuleDevice` → `Dictionary<string, DateTime>`
+
+### What Changes vs What Stays the Same
+
+| Component | Change |
+|-----------|--------|
+| `SqsConsumerWorker` | Route to `DeviceDispatcher` instead of calling `AlertEngine` directly |
+| New: `DeviceDispatcher` | `Channel<TelemetryReading>[]` + router + N consumer tasks |
+| `AlertEngine` | Becomes per-channel (instantiated N times); downgrade to `Dictionary` |
+| `IRuleEvaluator` | No interface change; downgrade internal dictionaries |
+| DI registration | Register `DeviceDispatcher` as singleton; `AlertEngine` no longer singleton |
+
 ## TODO
 
 - [ ] Rule cache subscription — replace 30s polling with PostgreSQL NOTIFY/LISTEN or MQTT for real-time updates
