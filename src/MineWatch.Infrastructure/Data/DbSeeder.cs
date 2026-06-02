@@ -17,10 +17,10 @@ public static class DbSeeder
         };
         dbContext.Devices.AddRange(devices);
         await dbContext.SaveChangesAsync();
-         if (!await dbContext.AlertRules.AnyAsync())
-  {
-      var rules = new[]
-      {
+        if (!await dbContext.AlertRules.AnyAsync())
+        {
+            var rules = new[]
+            {
           new AlertRule
           {
               Id = Guid.NewGuid(),
@@ -58,8 +58,8 @@ public static class DbSeeder
               CreatedAt = DateTime.UtcNow
           }
       };
-      dbContext.AlertRules.AddRange(rules);
-      await dbContext.SaveChangesAsync();
-  }
+            dbContext.AlertRules.AddRange(rules);
+            await dbContext.SaveChangesAsync();
+        }
     }
 }

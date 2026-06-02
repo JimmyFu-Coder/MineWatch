@@ -19,7 +19,7 @@ public enum AlertSeverity
 public class AlertRule
 {
     public Guid Id { get; set; }
-    public string Name { get; set; } =  string.Empty;
+    public string Name { get; set; } = string.Empty;
     public AlertRuleType RuleType { get; set; }
     public AlertSeverity Severity { get; set; }
     public double Threshold { get; set; }
