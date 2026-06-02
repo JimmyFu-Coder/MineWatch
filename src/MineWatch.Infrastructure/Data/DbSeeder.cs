@@ -17,5 +17,49 @@ public static class DbSeeder
         };
         dbContext.Devices.AddRange(devices);
         await dbContext.SaveChangesAsync();
+         if (!await dbContext.AlertRules.AnyAsync())
+  {
+      var rules = new[]
+      {
+          new AlertRule
+          {
+              Id = Guid.NewGuid(),
+              Name = "Speed Limit - Trucks",
+              RuleType = AlertRuleType.Speed,
+              Severity = AlertSeverity.High,
+              Threshold = 11.11,  // 40 km/h in m/s
+              DeviceType = "Truck",
+              CoolDownSeconds = 300,
+              IsEnabled = true,
+              CreatedAt = DateTime.UtcNow
+          },
+          new AlertRule
+          {
+              Id = Guid.NewGuid(),
+              Name = "Restricted Zone - Office Area",
+              RuleType = AlertRuleType.GeoFence,
+              Severity = AlertSeverity.Critical,
+              GeoFenceSpec = """{"type":"circle","centerLat":-31.95,"centerLon":115.86,"radiusMeters":300}""",
+              DeviceType = null,  // applies to all
+              CoolDownSeconds = 0,
+              IsEnabled = true,
+              CreatedAt = DateTime.UtcNow
+          },
+          new AlertRule
+          {
+              Id = Guid.NewGuid(),
+              Name = "Idle Timeout - Trucks",
+              RuleType = AlertRuleType.Idle,
+              Severity = AlertSeverity.Medium,
+              Threshold = 300,  // 5 minutes
+              DeviceType = "Truck",
+              CoolDownSeconds = 600,
+              IsEnabled = true,
+              CreatedAt = DateTime.UtcNow
+          }
+      };
+      dbContext.AlertRules.AddRange(rules);
+      await dbContext.SaveChangesAsync();
+  }
     }
 }
