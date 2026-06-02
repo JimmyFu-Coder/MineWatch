@@ -40,6 +40,9 @@ public class MineWatchDbContext : DbContext
             entity.Property(e => e.RuleType).HasConversion<string>();
             entity.Property(e => e.Severity).HasConversion<string>();
             entity.HasIndex(e => e.IsEnabled);
+            entity.Property(e => e.SpeedThreshold).HasDefaultValue(null);
+            entity.Property(e => e.IdleSpeedThreshold).HasDefaultValue(null);
+            entity.Property(e => e.IdleDurationSeconds).HasDefaultValue(null);
         });
 
         modelBuilder.Entity<Alert>(entity =>

@@ -22,7 +22,9 @@ public class AlertRule
     public string Name { get; set; } = string.Empty;
     public AlertRuleType RuleType { get; set; }
     public AlertSeverity Severity { get; set; }
-    public double Threshold { get; set; }
+    public double? SpeedThreshold { get; set; }
+    public double? IdleSpeedThreshold { get; set; }
+    public double? IdleDurationSeconds { get; set; }
     public string? DeviceType { get; set; } = string.Empty;
     public string? GeoFenceSpec { get; set; }
     public int CoolDownSeconds { get; set; }
