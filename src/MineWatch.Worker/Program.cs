@@ -55,6 +55,14 @@ try
     });
 
     var host = builder.Build();
+
+    // Apply migrations on startup
+    using (var scope = host.Services.CreateScope())
+    {
+        var db = scope.ServiceProvider.GetRequiredService<IDbContextFactory<MineWatchDbContext>>().CreateDbContext();
+        await db.Database.MigrateAsync();
+    }
+
     await host.RunAsync();
 }
 catch (Exception ex)

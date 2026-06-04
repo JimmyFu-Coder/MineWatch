@@ -14,5 +14,4 @@ docs/
 .github/
 .claude/
 docker-compose.yml
-TruckMocker/
 infra/

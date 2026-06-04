@@ -18,12 +18,17 @@ public class TelemetryController(MineWatchDbContext context) : ControllerBase
         if (!string.IsNullOrWhiteSpace(vehicleNo))
             query = query.Where(r => r.VehicleNo == vehicleNo);
 
-        var latest = await query
-            .GroupBy(r => r.DeviceId)
-            .Select(g => g.OrderByDescending(r => r.Timestamp).First())
-            .Join(context.Devices, r => r.DeviceId, d => d.Id, (r, d) => new LatestPositionResponse(
-                r.DeviceId, r.VehicleNo, r.Lat, r.Lon, r.Speed, r.Heading, r.Timestamp))
+        var readings = await query
+            .OrderByDescending(r => r.Timestamp)
+            .Take(100)
             .ToListAsync();
+
+        var latest = readings
+            .GroupBy(r => r.DeviceId)
+            .Select(g => g.First())
+            .Select(r => new LatestPositionResponse(
+                r.DeviceId, r.VehicleNo, r.Lat, r.Lon, r.Speed, r.Heading, r.Timestamp))
+            .ToList();
 
         return Ok(latest);
     }

@@ -84,6 +84,34 @@ public class TelemetryBatchWriter(
     private async Task WriteBatchAsync(List<TelemetryReading> batch)
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+
+        // Ensure devices exist for all readings
+        var vehicleNames = batch.Select(r => r.VehicleNo).Distinct().ToList();
+        var existingDevices = await dbContext.Devices
+            .Where(d => vehicleNames.Contains(d.Name))
+            .ToDictionaryAsync(d => d.Name, d => d.Id);
+
+        foreach (var name in vehicleNames)
+        {
+            if (!existingDevices.ContainsKey(name))
+            {
+                var device = new Device
+                {
+                    Id = Guid.NewGuid(), Name = name, Type = "Truck",
+                    Status = DeviceStatus.Online, CreatedAt = DateTime.UtcNow
+                };
+                dbContext.Devices.Add(device);
+                existingDevices[name] = device.Id;
+            }
+        }
+
+        // Assign DeviceId to readings
+        foreach (var reading in batch)
+        {
+            if (reading.DeviceId == Guid.Empty && existingDevices.TryGetValue(reading.VehicleNo, out var deviceId))
+                reading.DeviceId = deviceId;
+        }
+
         dbContext.TelemetryReadings.AddRange(batch);
         await dbContext.SaveChangesAsync();
         logger.LogInformation("Wrote {Count} telemetry readings to database", batch.Count);

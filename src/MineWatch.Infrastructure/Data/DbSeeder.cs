@@ -33,16 +33,18 @@ public static class DbSeeder
         }
 
         // Seed devices
-        if (await dbContext.Devices.AnyAsync())
-            return;
-        var devices = new[]
+        if (!await dbContext.Devices.AnyAsync())
         {
-            new Device { Id = Guid.NewGuid(), Name = "Truck-001", Type = "Truck" },
-            new Device { Id = Guid.NewGuid(), Name = "Truck-002", Type = "Truck" },
-            new Device { Id = Guid.NewGuid(), Name = "Truck-003", Type = "Truck" },
-        };
-        dbContext.Devices.AddRange(devices);
-        await dbContext.SaveChangesAsync();
+            var devices = new[]
+            {
+                new Device { Id = Guid.NewGuid(), Name = "Truck-001", Type = "Truck" },
+                new Device { Id = Guid.NewGuid(), Name = "Truck-002", Type = "Truck" },
+                new Device { Id = Guid.NewGuid(), Name = "Truck-003", Type = "Truck" },
+            };
+            dbContext.Devices.AddRange(devices);
+            await dbContext.SaveChangesAsync();
+        }
+
         if (!await dbContext.AlertRules.AnyAsync())
         {
             var rules = new[]
@@ -79,7 +81,7 @@ public static class DbSeeder
               Severity = AlertSeverity.Medium,
               IdleSpeedThreshold = 2,  // speed below 2 km/h counts as idle
               IdleDurationSeconds = 300,  // 5 minutes
-              DeviceType = "Thomas",
+              DeviceType = "Truck",
               CoolDownSeconds = 600,
               IsEnabled = true,
               CreatedAt = DateTime.UtcNow

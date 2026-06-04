@@ -1,0 +1,60 @@
+========================================
+ MineWatch Pipeline Verification
+ 2026-06-04 05:18:57 UTC
+========================================
+
+1. Infrastructure Status
+  PASS postgres: running
+  PASS mosquitto: running
+  PASS localstack: running
+  PASS api: running
+  PASS worker: running
+  PASS truckmocker: running
+
+2. API Health Check
+  PASS GET /health/ready → 200 (Healthy)
+
+3. Authentication (ASP.NET Identity + JWT)
+  PASS POST /api/auth/register → 400 (user may already exist)
+  PASS POST /api/auth/login → 200 (JWT token obtained)
+  PASS JWT role claim: Admin
+
+4. Device Registry
+  PASS GET /api/devices → 6 devices registered
+       Truck-003       type=Truck    id=a86ae8ff...
+       Truck-002       type=Truck    id=aad5b693...
+       Truck-001       type=Truck    id=b9dfced6...
+       VEHICLE_003     type=Truck    id=61d3ef4a...
+       VEHICLE_001     type=Truck    id=eaea3c87...
+       VEHICLE_002     type=Truck    id=ecba4f6e...
+
+5. Telemetry Pipeline (MQTT → SQS → Worker → PostgreSQL)
+  PASS GET /api/telemetry/latest → 3 vehicle(s) reporting
+       VEHICLE_001     speed= 126.5 km/h  lat=-32.26529 lon=116.02485
+       VEHICLE_002     speed=  92.0 km/h  lat=-32.26526 lon=116.02489
+       VEHICLE_003     speed=  90.2 km/h  lat=-32.26530 lon=116.02488
+
+6. Alert Engine (Rules → Evaluation → Alerts)
+  PASS GET /api/alerts/rules → 3 rule(s) configured
+       Idle Timeout - Trucks               type=Idle       enabled=True 
+       Restricted Zone - Office Area       type=GeoFence   enabled=True geo-fence
+       Speed Limit - Trucks                type=Speed      enabled=True speed>40km/h
+  PASS GET /api/alerts → 1137 alert(s) triggered
+       [Active  ] Vehicle left geo-fence zone 'Restricted Zone - Office Area'
+       ... and 1136 more
+
+7. Role-Based Authorization
+  PASS Unauthenticated request → 401 Unauthorized
+
+8. Automated Tests
+  PASS Unit tests:        Passed!  - Failed:     0, Passed:    52, Skipped:     0, Total:    52, Duration: 11 s - MineWatch.Api.Tests.dll (net9.0)
+  PASS Integration tests: Passed!  - Failed:     0, Passed:    13, Skipped:     0, Total:    13, Duration: 2 s - MineWatch.IntegrationTests.dll (net9.0)
+
+Summary
+  Services:    6/6 running
+  Auth:        JWT + ASP.NET Identity with role claims
+  Pipeline:    TruckMocker → MQTT → Worker → PostgreSQL → API
+  Alert Engine: 1137 alerts from 3 rules
+  Telemetry:   3 vehicles, 6 devices
+
+  All checks passed.

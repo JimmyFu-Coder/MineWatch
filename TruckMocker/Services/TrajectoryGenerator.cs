@@ -34,7 +34,7 @@ public class TrajectoryGenerator
                     Timestamp = timestamp,
                     Lat = baseLat + jitter.lat,
                     Lon = baseLon + jitter.lon,
-                    Speed = _config.AvgSpeedMps * (0.8 + random.NextDouble() * 0.4),
+                    Speed = _config.AvgSpeedMps * (0.8 + random.NextDouble() * 0.4) * 3.6,
                     Heading = heading
                 });
             }
