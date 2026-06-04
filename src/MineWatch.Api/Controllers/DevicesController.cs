@@ -29,6 +29,7 @@ public class DevicesController(IDeviceService deviceService) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateAsync([FromBody] CreateDeviceRequest request)
     {
         var device = await deviceService.CreateAsync(request);
@@ -36,6 +37,7 @@ public class DevicesController(IDeviceService deviceService) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "Admin,Operator")]
     public async Task<IActionResult> UpdateAsync([FromRoute] Guid id, [FromBody] UpdateDeviceRequest request)
     {
         var device = await deviceService.UpdateAsync(id, request);
@@ -43,6 +45,7 @@ public class DevicesController(IDeviceService deviceService) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteAsync([FromRoute] Guid id)
     {
         var success = await deviceService.DeleteAsync(id);

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MineWatch.Infrastructure.Entities;
 
@@ -5,8 +6,33 @@ namespace MineWatch.Infrastructure.Data;
 
 public static class DbSeeder
 {
-    public static async Task SeedAsync(MineWatchDbContext dbContext)
+    public static async Task SeedAsync(
+        MineWatchDbContext dbContext,
+        UserManager<IdentityUser>? userManager = null,
+        RoleManager<IdentityRole>? roleManager = null)
     {
+        // Seed roles
+        if (roleManager != null)
+        {
+            foreach (var role in new[] { "Admin", "Operator", "Viewer" })
+            {
+                if (!await roleManager.RoleExistsAsync(role))
+                    await roleManager.CreateAsync(new IdentityRole(role));
+            }
+        }
+
+        // Seed admin user
+        if (userManager != null)
+        {
+            if (await userManager.FindByNameAsync("admin") == null)
+            {
+                var admin = new IdentityUser { UserName = "admin" };
+                await userManager.CreateAsync(admin, "Admin@123");
+                await userManager.AddToRoleAsync(admin, "Admin");
+            }
+        }
+
+        // Seed devices
         if (await dbContext.Devices.AnyAsync())
             return;
         var devices = new[]
@@ -53,7 +79,7 @@ public static class DbSeeder
               Severity = AlertSeverity.Medium,
               IdleSpeedThreshold = 2,  // speed below 2 km/h counts as idle
               IdleDurationSeconds = 300,  // 5 minutes
-              DeviceType = "Truck",
+              DeviceType = "Thomas",
               CoolDownSeconds = 600,
               IsEnabled = true,
               CreatedAt = DateTime.UtcNow

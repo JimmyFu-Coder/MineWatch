@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MineWatch.Infrastructure.Entities;
 
 namespace MineWatch.Infrastructure.Data;
 
-public class MineWatchDbContext : DbContext
+public class MineWatchDbContext : IdentityDbContext<IdentityUser>
 {
     public MineWatchDbContext(DbContextOptions<MineWatchDbContext> options)
         : base(options)
@@ -17,6 +19,8 @@ public class MineWatchDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.Entity<Device>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -56,7 +60,5 @@ public class MineWatchDbContext : DbContext
             entity.HasOne(e => e.Device).WithMany().HasForeignKey(e => e.DeviceId);
             entity.HasOne(e => e.TelemetryReading).WithMany().HasForeignKey(e => e.TelemetryReadingId);
         });
-
-        base.OnModelCreating(modelBuilder);
     }
 }

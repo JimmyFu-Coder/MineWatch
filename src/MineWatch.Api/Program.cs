@@ -1,6 +1,7 @@
 using System.Text;
 using Amazon.SQS;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -27,8 +28,11 @@ try
     var builder = WebApplication.CreateBuilder(args);
     builder.Host.UseSerilog();
 
-    builder.Services.AddDbContextFactory<MineWatchDbContext>(options =>
+    builder.Services.AddDbContext<MineWatchDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+    builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+        .AddEntityFrameworkStores<MineWatchDbContext>();
 
 
     builder.Services.AddEndpointsApiExplorer();
@@ -90,7 +94,8 @@ try
             ValidateIssuerSigningKey = true,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
+            RoleClaimType = System.Security.Claims.ClaimTypes.Role
         });
 
     builder.Services.AddHealthChecks()
@@ -104,8 +109,10 @@ try
     using (var scope = app.Services.CreateScope())
     {
         var dbContext = scope.ServiceProvider.GetRequiredService<MineWatchDbContext>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         await dbContext.Database.MigrateAsync();
-        await DbSeeder.SeedAsync(dbContext);
+        await DbSeeder.SeedAsync(dbContext, userManager, roleManager);
     }
 
     if (app.Environment.IsDevelopment())

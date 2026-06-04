@@ -27,6 +27,7 @@ public class AlertsController(IAlertService alertService) : ControllerBase
     }
 
     [HttpPost("rules")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateRule([FromBody] CreateRuleRequest request)
     {
         var rule = await alertService.CreateRuleAsync(request);
@@ -34,6 +35,7 @@ public class AlertsController(IAlertService alertService) : ControllerBase
     }
 
     [HttpPut("rules/{id:guid}")]
+    [Authorize(Roles = "Admin,Operator")]
     public async Task<IActionResult> UpdateRule(Guid id, [FromBody] UpdateRuleRequest request)
     {
         var rule = await alertService.UpdateRuleAsync(id, request);
@@ -41,6 +43,7 @@ public class AlertsController(IAlertService alertService) : ControllerBase
     }
 
     [HttpDelete("rules/{id:guid}")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> DeleteRule(Guid id)
     {
         var success = await alertService.DeleteRuleAsync(id);
@@ -61,6 +64,7 @@ public class AlertsController(IAlertService alertService) : ControllerBase
     }
 
     [HttpPut("{id:guid}/acknowledge")]
+    [Authorize(Roles = "Admin,Operator")]
     public async Task<IActionResult> AcknowledgeAlert(Guid id, [FromBody] AcknowledgeRequest request)
     {
         var alert = await alertService.AcknowledgeAlertAsync(id, request);
@@ -68,6 +72,7 @@ public class AlertsController(IAlertService alertService) : ControllerBase
     }
 
     [HttpPut("{id:guid}/resolve")]
+    [Authorize(Roles = "Admin,Operator")]
     public async Task<IActionResult> ResolveAlert(Guid id)
     {
         var alert = await alertService.ResolveAlertAsync(id);
