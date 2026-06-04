@@ -47,7 +47,9 @@ public class NotificationWorkerTests
         // After first receive returns empty, the loop will continue — cancel after short delay
         cts.CancelAfter(TimeSpan.FromSeconds(3));
 
-        try { await worker.StartAsync(cts.Token); } catch (OperationCanceledException) { }
+        try
+        { await worker.StartAsync(cts.Token); }
+        catch (OperationCanceledException) { }
 
         clientProxy.Verify(c => c.SendCoreAsync("TelemetryUpdate",
             It.Is<object[]>(args => args.Length == 1),
@@ -68,7 +70,9 @@ public class NotificationWorkerTests
 
         var cts = new CancellationTokenSource();
         cts.CancelAfter(TimeSpan.FromSeconds(3));
-        try { await worker.StartAsync(cts.Token); } catch (OperationCanceledException) { }
+        try
+        { await worker.StartAsync(cts.Token); }
+        catch (OperationCanceledException) { }
 
         clientProxy.Verify(c => c.SendCoreAsync("AlertReceived",
             It.Is<object[]>(args => args.Length == 1),
@@ -94,7 +98,9 @@ public class NotificationWorkerTests
 
         var cts = new CancellationTokenSource();
         cts.CancelAfter(TimeSpan.FromSeconds(3));
-        try { await worker.StartAsync(cts.Token); } catch (OperationCanceledException) { }
+        try
+        { await worker.StartAsync(cts.Token); }
+        catch (OperationCanceledException) { }
 
         // Bad JSON causes exception, no SignalR push
         clientProxy.Verify(c => c.SendCoreAsync(It.IsAny<string>(), It.IsAny<object[]>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -115,7 +121,9 @@ public class NotificationWorkerTests
 
         var cts = new CancellationTokenSource();
         cts.CancelAfter(TimeSpan.FromSeconds(3));
-        try { await worker.StartAsync(cts.Token); } catch (OperationCanceledException) { }
+        try
+        { await worker.StartAsync(cts.Token); }
+        catch (OperationCanceledException) { }
 
         // Unknown type: no SignalR push, but message gets deleted
         clientProxy.Verify(c => c.SendCoreAsync(It.IsAny<string>(), It.IsAny<object[]>(), It.IsAny<CancellationToken>()), Times.Never);
@@ -130,7 +138,9 @@ public class NotificationWorkerTests
 
         var cts = new CancellationTokenSource();
         cts.CancelAfter(TimeSpan.FromSeconds(3));
-        try { await worker.StartAsync(cts.Token); } catch (OperationCanceledException) { }
+        try
+        { await worker.StartAsync(cts.Token); }
+        catch (OperationCanceledException) { }
 
         sqs.Verify(s => s.ReceiveMessageAsync(It.IsAny<ReceiveMessageRequest>(), It.IsAny<CancellationToken>()), Times.Never);
     }

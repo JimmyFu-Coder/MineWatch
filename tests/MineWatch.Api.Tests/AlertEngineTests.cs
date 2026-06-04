@@ -200,8 +200,13 @@ public class AlertEngineTests
         {
             seedCtx.AlertRules.Add(new AlertRule
             {
-                Id = Guid.NewGuid(), Name = "Speed 10", RuleType = AlertRuleType.Speed,
-                SpeedThreshold = 10, DeviceType = null, IsEnabled = true, CoolDownSeconds = 3600,
+                Id = Guid.NewGuid(),
+                Name = "Speed 10",
+                RuleType = AlertRuleType.Speed,
+                SpeedThreshold = 10,
+                DeviceType = null,
+                IsEnabled = true,
+                CoolDownSeconds = 3600,
                 CreatedAt = DateTime.UtcNow
             });
             seedCtx.SaveChanges();
@@ -238,13 +243,21 @@ public class AlertEngineTests
         {
             seedCtx.Devices.Add(new Device
             {
-                Id = deviceId, Name = "Excavator-001", Type = "Excavator",
-                Status = DeviceStatus.Online, CreatedAt = DateTime.UtcNow
+                Id = deviceId,
+                Name = "Excavator-001",
+                Type = "Excavator",
+                Status = DeviceStatus.Online,
+                CreatedAt = DateTime.UtcNow
             });
             seedCtx.AlertRules.Add(new AlertRule
             {
-                Id = Guid.NewGuid(), Name = "Truck Speed", RuleType = AlertRuleType.Speed,
-                SpeedThreshold = 10, DeviceType = "Truck", IsEnabled = true, CoolDownSeconds = 0,
+                Id = Guid.NewGuid(),
+                Name = "Truck Speed",
+                RuleType = AlertRuleType.Speed,
+                SpeedThreshold = 10,
+                DeviceType = "Truck",
+                IsEnabled = true,
+                CoolDownSeconds = 0,
                 CreatedAt = DateTime.UtcNow
             });
             seedCtx.SaveChanges();
@@ -259,8 +272,12 @@ public class AlertEngineTests
 
         var reading = new TelemetryReading
         {
-            Id = Guid.NewGuid(), DeviceId = deviceId, Speed = 60,
-            Lat = -32, Lon = 116, Timestamp = DateTime.UtcNow
+            Id = Guid.NewGuid(),
+            DeviceId = deviceId,
+            Speed = 60,
+            Lat = -32,
+            Lon = 116,
+            Timestamp = DateTime.UtcNow
         };
         await engine.EvaluateAsync(reading);
 
@@ -280,13 +297,21 @@ public class AlertEngineTests
         {
             seedCtx.Devices.Add(new Device
             {
-                Id = deviceId, Name = "Truck-001", Type = "Truck",
-                Status = DeviceStatus.Online, CreatedAt = DateTime.UtcNow
+                Id = deviceId,
+                Name = "Truck-001",
+                Type = "Truck",
+                Status = DeviceStatus.Online,
+                CreatedAt = DateTime.UtcNow
             });
             seedCtx.AlertRules.Add(new AlertRule
             {
-                Id = Guid.NewGuid(), Name = "Truck Speed", RuleType = AlertRuleType.Speed,
-                SpeedThreshold = 10, DeviceType = "Truck", IsEnabled = true, CoolDownSeconds = 0,
+                Id = Guid.NewGuid(),
+                Name = "Truck Speed",
+                RuleType = AlertRuleType.Speed,
+                SpeedThreshold = 10,
+                DeviceType = "Truck",
+                IsEnabled = true,
+                CoolDownSeconds = 0,
                 CreatedAt = DateTime.UtcNow
             });
             seedCtx.SaveChanges();
@@ -301,8 +326,12 @@ public class AlertEngineTests
 
         var reading = new TelemetryReading
         {
-            Id = Guid.NewGuid(), DeviceId = deviceId, Speed = 60,
-            Lat = -32, Lon = 116, Timestamp = DateTime.UtcNow
+            Id = Guid.NewGuid(),
+            DeviceId = deviceId,
+            Speed = 60,
+            Lat = -32,
+            Lon = 116,
+            Timestamp = DateTime.UtcNow
         };
         await engine.EvaluateAsync(reading);
 
