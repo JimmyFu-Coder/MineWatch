@@ -97,8 +97,11 @@ public class TelemetryBatchWriter(
             {
                 var device = new Device
                 {
-                    Id = Guid.NewGuid(), Name = name, Type = "Truck",
-                    Status = DeviceStatus.Online, CreatedAt = DateTime.UtcNow
+                    Id = Guid.NewGuid(),
+                    Name = name,
+                    Type = "Truck",
+                    Status = DeviceStatus.Online,
+                    CreatedAt = DateTime.UtcNow
                 };
                 dbContext.Devices.Add(device);
                 existingDevices[name] = device.Id;
