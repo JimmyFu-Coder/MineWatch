@@ -1,2 +1,7 @@
 #!/bin/sh
 dotnet format MineWatch.sln --no-restore
+git diff --quiet
+if [ $? -ne 0 ]; then
+    echo "Formatting changes detected, re-staging files..."
+    git diff --name-only -- '*.cs' '*.csproj' | xargs -r git add
+fi
