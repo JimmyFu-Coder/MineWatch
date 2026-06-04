@@ -20,6 +20,11 @@ public class AlertEngine(
     private readonly TimeSpan _rulesCacheTtl = TimeSpan.FromSeconds(30);
     private readonly ConcurrentDictionary<string, DateTime> _lastAlertByRuleDevice = new();
 
+    // Device type cache: deviceId -> device type string
+    private readonly ConcurrentDictionary<Guid, string?> _deviceTypeCache = new();
+    private DateTime _devicesLoadedAt = DateTime.MinValue;
+    private readonly TimeSpan _deviceCacheTtl = TimeSpan.FromMinutes(5);
+
     public async Task EvaluateAsync(TelemetryReading reading)
     {
         try
@@ -68,14 +73,40 @@ public class AlertEngine(
         return _cachedRules;
     }
 
-    // TODO: Device type lookup cache — avoid querying DB on every evaluation
     private async Task<bool> MatchesDeviceTypeAsync(AlertRule rule, Guid deviceId)
     {
         if (rule.DeviceType == null)
             return true;
 
-        await using var dbContext = await dbContextFactory.CreateDbContextAsync();
-        return await dbContext.Devices.AnyAsync(d => d.Id == deviceId && d.Type == rule.DeviceType);
+        var deviceType = await GetDeviceTypeAsync(deviceId);
+        return deviceType == rule.DeviceType;
+    }
+
+    private async Task<string?> GetDeviceTypeAsync(Guid deviceId)
+    {
+        if (_deviceTypeCache.TryGetValue(deviceId, out var cachedType))
+            return cachedType;
+
+        // Refresh entire cache if TTL expired
+        if (DateTime.UtcNow - _devicesLoadedAt > _deviceCacheTtl)
+        {
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+            var devices = await dbContext.Devices.ToDictionaryAsync(d => d.Id, d => d.Type);
+            foreach (var (id, devType) in devices)
+                _deviceTypeCache[id] = devType;
+            _devicesLoadedAt = DateTime.UtcNow;
+
+            return _deviceTypeCache.TryGetValue(deviceId, out var cached) ? cached : null;
+        }
+
+        // Cache not expired but device not found — single lookup
+        await using var ctx = await dbContextFactory.CreateDbContextAsync();
+        var deviceType = await ctx.Devices
+            .Where(d => d.Id == deviceId)
+            .Select(d => d.Type)
+            .FirstOrDefaultAsync();
+        _deviceTypeCache[deviceId] = deviceType;
+        return deviceType;
     }
 
     private bool IsInCooldown(string key, int cooldownSeconds)

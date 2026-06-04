@@ -51,7 +51,7 @@ services:
       - "5211:5211"
     environment:
       - ConnectionStrings__DefaultConnection=Host=postgres;Database=minewatch;Username=postgres;Password=postgres
-      - Jwt__Key=minewatch-production-secret-key-change-me
+      - Jwt__Key=dev-only-demo-key-do-not-use-in-production
       - Jwt__Issuer=MineWatch
       - Jwt__Audience=MineWatchAPI
       - AWS__ServiceURL=http://localstack:4566

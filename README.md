@@ -244,6 +244,17 @@ On first startup, the system seeds:
   - Restricted Zone — Office Area: geo-fence circle (Perth CBD), no cooldown
   - Idle Timeout — Trucks: 5 min stationary, 600s cooldown
 
+## Known Trade-offs
+
+These are deliberate simplifications for the demo/portfolio context. A production deployment would address each one:
+
+| Area | Current Implementation | Production Approach |
+|---|---|---|
+| **SQS message deletion** | `SqsConsumerWorker` deletes from SQS immediately after writing to the in-memory `Channel<T>`, before `TelemetryBatchWriter` persists to DB. If the worker crashes between channel write and DB write, that data is lost. | Delete-after-persist: acknowledge the message only after the batch writer confirms the DB write. Alternatives: outbox pattern, or use the batch writer callback to signal completion. |
+| **Channel backpressure** | Bounded `Channel<T>(1000)` with `FullMode = DropOldest`. Suitable for live dashboards where stale positions are low-value, but inappropriate for audit/reporting pipelines that require every sample. | For audit-critical data, use `FullMode.Wait` and let SQS absorb backpressure, or scale out consumers. Consider separate pipelines for live vs. historical data. |
+| **Demo credentials** | `docker-compose.yml` contains a demo JWT signing key and `DbSeeder` creates `admin / Admin@123`. These are for local development only. | Production uses AWS Secrets Manager or equivalent for JWT keys and connection strings. No seed credentials in production — admin accounts created via a secure bootstrapping flow. |
+| **Device type cache** | `AlertEngine` caches rules (30s TTL) and device types (5min TTL) in-memory. Changes propagate on cache expiry, not immediately. | PostgreSQL NOTIFY/LISTEN or MQTT pub/sub for real-time cache invalidation. |
+
 ## License
 
 Apache 2.0
