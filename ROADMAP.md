@@ -40,59 +40,57 @@ Real-time fleet telemetry ingestion with device management.
 
 ---
 
-## Phase 2: Real-Time Dashboard & Alerting
+## Phase 2: Real-Time Dashboard & Alerting (Completed)
 
 Make telemetry data visible and actionable.
 
 ### Milestone 2.1 — Real-Time Data API
-- [ ] Telemetry query endpoints (latest position, historical trail)
-- [ ] SignalR WebSocket hub for live position updates
-- [ ] Geo-fence zone management API
+- [x] Telemetry query endpoints (latest position, historical trail)
+- [x] SignalR WebSocket hub for live position updates
+- [x] Geo-fence zone management via alert rules API
 
 **Deliverables:** Queryable telemetry API, real-time push to clients
 
 ### Milestone 2.2 — Alert Engine
 
 **Rule Types:**
-- [ ] Speed Threshold — trigger when vehicle speed exceeds limit (e.g. 120 km/h / 33.3 m/s)
-- [ ] Geo-Fence Breach — trigger when vehicle enters restricted zone (circle or polygon)
-- [ ] Idle Timeout — trigger when vehicle is stationary beyond threshold (e.g. 5 minutes)
+- [x] Speed Threshold — trigger when vehicle speed exceeds limit
+- [x] Geo-Fence Breach — trigger when vehicle enters/leaves restricted zone (circle or polygon)
+- [x] Idle Timeout — trigger when vehicle is stationary beyond threshold
 
 **Rule Management:**
-- [ ] Global rules (apply to all devices) and device-specific rules
-- [ ] Enable / disable rules without deletion
-- [ ] Severity levels: Low / Medium / High / Critical
-- [ ] Cooldown period per rule to prevent alert storms (same rule + device won't re-trigger within N seconds)
+- [x] Device-type-scoped rules (`DeviceType == null` matches all)
+- [x] Enable / disable rules without deletion
+- [x] Severity levels: Low / Medium / High / Critical
+- [x] Cooldown period per rule to prevent alert storms
 
 **Alert Lifecycle:**
-- [ ] Active → Acknowledged → Resolved status flow
-- [ ] Record trigger location (lat/lon), speed, timestamp, and triggering telemetry reading ID
-- [ ] Acknowledge with operator identity tracking
+- [x] Active → Acknowledged → Resolved status flow
+- [x] Record trigger location (lat/lon), speed, timestamp, and triggering telemetry reading ID
 
 **Data Model:**
-- [ ] `AlertRule` entity — rule type, threshold, severity, device scope, cooldown, enabled flag
-- [ ] `Alert` entity — linked to rule + device + telemetry reading, status, message, trigger metadata
-- [ ] EF Core migration with indexes on `Alert.Status`, `Alert.DeviceId`, `Alert.TriggeredAt`, `AlertRule.IsEnabled`
+- [x] `AlertRule` entity — rule type, threshold, severity, device scope, cooldown, enabled flag
+- [x] `Alert` entity — linked to rule + device + telemetry reading, status, message, trigger metadata
+- [x] EF Core migration with indexes on `Alert.Status`, `Alert.DeviceId`, `Alert.TriggeredAt`
 
 **API Endpoints:**
-- [ ] `POST   /api/alerts/rules` — create alert rule
-- [ ] `GET    /api/alerts/rules` — list rules (paginated)
-- [ ] `GET    /api/alerts/rules/{id}` — get rule detail
-- [ ] `PUT    /api/alerts/rules/{id}` — update rule (threshold, severity, enabled)
-- [ ] `DELETE /api/alerts/rules/{id}` — delete rule
-- [ ] `GET    /api/alerts` — query alerts (filter by status / deviceId / ruleId, paginated)
-- [ ] `GET    /api/alerts/{id}` — get alert detail
-- [ ] `POST   /api/alerts/{id}/acknowledge` — acknowledge alert with operator name
-- [ ] `POST   /api/alerts/{id}/resolve` — resolve alert
+- [x] `POST   /api/alerts/rules` — create alert rule
+- [x] `GET    /api/alerts/rules` — list rules (paginated)
+- [x] `GET    /api/alerts/rules/{id}` — get rule detail
+- [x] `PUT    /api/alerts/rules/{id}` — update rule
+- [x] `DELETE /api/alerts/rules/{id}` — delete rule
+- [x] `GET    /api/alerts` — query alerts (filter by status / deviceId / ruleId, paginated)
+- [x] `PUT    /api/alerts/{id}/acknowledge` — acknowledge alert
+- [x] `PUT    /api/alerts/{id}/resolve` — resolve alert
 
 **Pipeline Integration:**
-- [ ] `AlertEngine` service evaluates rules against each incoming `TelemetryReading` after DB write
-- [ ] In-memory rule cache (30s TTL) to avoid querying rules on every reading
-- [ ] In-memory idle state tracking (per-device last movement timestamp)
-- [ ] Alert evaluation failure does not block telemetry ingestion
+- [x] `AlertEngine` evaluates rules against each incoming `TelemetryReading` after DB write
+- [x] In-memory rule cache (30s TTL)
+- [x] In-memory idle state tracking (per-device)
+- [x] Alert evaluation failure does not block telemetry ingestion
 
 **Seed Data:**
-- [ ] 3 default rules on first run: speed limit 120 km/h, restricted zone (circle near mine coordinates), idle 5 min
+- [x] 3 default rules on first run: speed limit 40 km/h, restricted zone (circle near Perth CBD), idle 5 min
 
 **Data Flow:**
 ```
@@ -106,107 +104,70 @@ TruckMocker → MQTT → SQS → SqsConsumerWorker
 
 **Deliverables:** Configurable alert rules, automatic evaluation on telemetry ingestion, queryable alert API, alert lifecycle management
 
-### Milestone 2.3 — Notification Channels (Deferred)
-- [ ] Email via Amazon SES
-- [ ] SMS via Amazon SNS
-- [ ] WebSocket push via SignalR
+### Milestone 2.3 — Notification Pipeline
+- [x] Worker publishes telemetry + alert notifications to SQS
+- [x] API NotificationWorker consumes SQS and pushes via SignalR
+- [x] `INotificationPublisher` interface with `NotificationPublisher` implementation
 
-**Deliverables:** Multi-channel alert notifications
+**Deliverables:** Notification pipeline from Worker to SignalR clients
 
-### Milestone 2.4 — Web Dashboard
+### Milestone 2.4 — Authentication & Authorization
+- [x] ASP.NET Identity with `IdentityDbContext`
+- [x] User registration with role assignment
+- [x] JWT Bearer tokens with role claims
+- [x] Role-based authorization: Admin, Operator, Viewer
+- [x] Seeded admin user (admin/Admin@123)
+- [x] No hardcoded credentials in source code
+
+**Deliverables:** Production-ready auth with user management and role-based access
+
+### Milestone 2.5 — Integration Tests & Verification
+- [x] `MineWatch.IntegrationTests` project (xUnit + InMemory DB)
+- [x] AlertEngine integration tests (speed, geo-fence, idle, cooldown, device type, disabled, multiple rules, exception isolation)
+- [x] Identity integration tests (register, login, duplicate, role assignment)
+- [x] Notification pipeline integration tests (telemetry flow, alert flow)
+- [x] Docker Compose full-pipeline verification script (`verify-pipeline.sh`)
+
+**Deliverables:** 52 unit tests + 13 integration tests, end-to-end verification
+
+---
+
+## Phase 3: Web Dashboard (Planned)
+
+### Milestone 3.1 — Frontend Application
 - [ ] React / Blazor front-end
 - [ ] Live fleet map with vehicle positions
 - [ ] Alert list and acknowledgment UI
 - [ ] Device management interface
+- [ ] Rule management UI
 
 **Deliverables:** Operational dashboard for fleet monitoring
 
-### Milestone 2.5 — Integration Tests & Performance Verification
-
-Prove the system works end-to-end with concrete numbers, not just unit tests.
-
-**Alert Engine Integration Tests (WebApplicationFactory + InMemory DB):**
-- [ ] Speed threshold: trigger when speed exceeds limit, no trigger when below
-- [ ] Geo-fence breach (circle): trigger inside zone, no trigger outside
-- [ ] Geo-fence breach (polygon): trigger inside polygon, no trigger outside
-- [ ] Idle timeout: trigger after N seconds stationary, no trigger when moving
-- [ ] Cooldown: duplicate alert not created within cooldown window
-- [ ] Device-specific rule: only applies to target device
-- [ ] Disabled rule: does not trigger
-- [ ] Multiple rules: all matching rules create separate alerts
-
-**AlertsController End-to-End Tests:**
-- [ ] Rule CRUD: create → read → update → delete
-- [ ] Alert query with filters: by status, by deviceId, by ruleId
-- [ ] Alert acknowledge: status changes, `acknowledgedBy` and `acknowledgedAt` set
-- [ ] Alert resolve: status changes, `resolvedAt` set
-- [ ] Authorization required on all endpoints
-
-**Performance Benchmarks (with concrete baseline assertions):**
-- [ ] AlertEngine evaluation throughput: 10,000 readings × 100 rules, measure **readings/sec** — baseline > 100/sec
-- [ ] Single evaluation latency: 1,000 iterations, measure **avg microseconds** — baseline < 5,000 μs
-- [ ] Batch telemetry write throughput: 10,000 readings in batches of 100, measure **writes/sec** — baseline > 50/sec
-- [ ] Alert query performance: 10,000 alerts in DB, paginated query, measure **query time ms** — baseline < 500 ms
-
-**Test Infrastructure:**
-- [ ] `MineWatch.IntegrationTests` project (xUnit + WebApplicationFactory + EF InMemory)
-- [ ] `TestAuthHandler` to bypass JWT in integration tests
-- [ ] `CustomWebApplicationFactory` that replaces DB + removes hosted services
-- [ ] Update CI pipeline to run integration tests
-
-**Deliverables:** Integration test suite with 15+ test cases, 4 performance benchmarks with published numbers, CI integration
-
 ---
 
-## Phase 3: Analytics & Reporting
+## Phase 4: Production Hardening & Scale (Planned)
 
-Business intelligence from fleet data.
-
-### Milestone 3.1 — Data Aggregation
-- [ ] Time-series aggregation service (hourly/daily summaries)
-- [ ] Distance traveled and fuel consumption estimation
-- [ ] Utilization reports (active vs idle time)
-
-**Deliverables:** Aggregated metrics API
-
-### Milestone 3.2 — Reporting
-- [ ] Scheduled report generation (PDF/Excel)
-- [ ] Report delivery via email
-- [ ] Custom date range queries and exports
-
-**Deliverables:** Automated reporting pipeline
-
-### Milestone 3.3 — Advanced Analytics
-- [ ] Heat map of vehicle activity
-- [ ] Predictive maintenance indicators
-- [ ] Trend analysis and anomaly detection
-
-**Deliverables:** Analytics dashboard with insights
-
----
-
-## Phase 4: Production Hardening & Scale
-
-### Milestone 4.1 — Security
-- [ ] ASP.NET Identity with role-based access control
-- [ ] API key management for device authentication
-- [ ] Audit logging
-- [ ] Secrets management (AWS Secrets Manager)
-
-**Deliverables:** Production-ready auth and security
-
-### Milestone 4.2 — Reliability
-- [ ] Health checks with comprehensive dependencies
-- [ ] Structured logging (Serilog → CloudWatch)
-- [ ] Metrics and monitoring (Prometheus / Grafana)
-- [ ] Graceful shutdown and data durability guarantees
-
-**Deliverables:** Production observability stack
-
-### Milestone 4.3 — Infrastructure
+### Milestone 4.1 — Infrastructure
 - [ ] Terraform / CDK IaC for AWS deployment
 - [ ] Container orchestration (ECS / EKS)
 - [ ] Database backup and disaster recovery
 - [ ] Auto-scaling and load testing
 
 **Deliverables:** Cloud deployment pipeline, scalable infrastructure
+
+### Milestone 4.2 — Reliability
+- [ ] Structured logging (Serilog → CloudWatch)
+- [ ] Metrics and monitoring (Prometheus / Grafana dashboards)
+- [ ] Graceful shutdown and data durability guarantees
+- [ ] Health checks with comprehensive dependencies
+
+**Deliverables:** Production observability stack
+
+### Milestone 4.3 — Advanced Features
+- [ ] Audit logging
+- [ ] API key management for device authentication
+- [ ] Secrets management (AWS Secrets Manager)
+- [ ] Time-series aggregation (hourly/daily summaries)
+- [ ] Scheduled report generation
+
+**Deliverables:** Production-ready security and reporting

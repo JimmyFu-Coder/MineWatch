@@ -1,37 +1,56 @@
 # MineWatch
 
-Real-time monitoring platform for mining equipment. Collects GPS telemetry from fleet vehicles via MQTT, processes messages through AWS SQS, and persists data to PostgreSQL with batch writing.
+Real-time monitoring platform for mining equipment. Collects GPS telemetry from fleet vehicles via MQTT, processes through an alert engine with configurable rules (speed, geo-fence, idle), and exposes data via REST API with SignalR real-time push.
 
 ## Architecture
 
 ```
-  ┌──────────────┐  MQTT   ┌───────────────────┐
-  │  TruckMocker  │────────>│  MineWatch.Worker  │
-  │  (Simulator)  │         │                    │
-  └──────────────┘         │  MqttSubscriber ───┼──> SQS Queue ──> SqsConsumerWorker
-                            │                    │                        │
-                            └────────────────────┘                        │
-                                                                          ▼
-  ┌──────────────────┐                              ┌──────────────────────────────┐
-  │  MineWatch.Api    │<─────────────────────────────│  TelemetryBatchWriter        │
-  │                   │         PostgreSQL            │  (Channel<T>, batch of 100,  │
-  │  REST API         │                              │   5s flush, retry on failure) │
-  │  Swagger UI       │                              └──────────────────────────────┘
-  │  Prometheus       │
-  │  Health Checks    │
-  └──────────────────┘
+  ┌──────────────┐  MQTT   ┌──────────────────────────────────────────────────┐
+  │  TruckMocker  │────────>│  MineWatch.Worker                                 │
+  │  (Simulator)  │         │                                                    │
+  └──────────────┘         │  MqttSubscriberService ──> SQS Queue              │
+                             │                                    │              │
+                             │  SqsConsumerWorker <────────────────┘              │
+                             │       │                                            │
+                             │       ▼                                            │
+                             │  TelemetryBatchWriter                              │
+                             │   ├─ Auto-register unknown devices                │
+                             │   ├─ Batch write to PostgreSQL                    │
+                             │   ├─ AlertEngine.EvaluateAsync()                  │
+                             │   └─ NotificationPublisher (SQS)                  │
+                             │                                                    │
+                             │  AlertEngine                                       │
+                             │   ├─ SpeedRuleEvaluator                           │
+                             │   ├─ GeoFenceRuleEvaluator                        │
+                             │   └─ IdleRuleEvaluator                            │
+                             └──────────────────────────────────────────────────┘
+                                       │
+  ┌────────────────────────────────────┼─────────────────────────────────────┐
+  │  MineWatch.Api                      │                                     │
+  │                                     ▼                                     │
+  │  ┌─────────────┐    ┌──────────────────────┐    ┌─────────────────────┐  │
+  │  │ REST API     │    │  PostgreSQL           │    │  SignalR Hub        │  │
+  │  │ Controllers  │<──>│  - Devices            │    │  TelemetryHub       │  │
+  │  │ Auth (JWT)   │    │  - TelemetryReadings  │    │  - TelemetryUpdate  │  │
+  │  │ Swagger UI   │    │  - AlertRules         │    │  - AlertReceived    │  │
+  │  │ Prometheus   │    │  - Alerts             │    └─────────────────────┘  │
+  │  │ Health Checks│    │  - Users (Identity)   │                             │
+  │  └─────────────┘    └──────────────────────┘                             │
+  └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Data flow:** TruckMocker → MQTT → Worker (subscribe + push to SQS) → SQS → Worker (consume + batch write) → PostgreSQL → API
+**Data flow:** TruckMocker → MQTT → Worker (subscribe + SQS) → SQS → Worker (consume + batch write + alert evaluation) → PostgreSQL → API → Client
 
 ## Key Design Decisions
 
 | Decision | Rationale |
 |---|---|
 | SQS between MQTT and DB | Decouples ingestion from persistence, enables retry/DLQ on failure, provides backpressure |
-| Channel-based batch writer | `Channel<T>` with a 100-item/5-second threshold reduces DB round-trips from 1-per-message to ~1-per-batch |
+| Channel-based batch writer | `Channel<T>` with a 100-item/1-second threshold reduces DB round-trips from 1-per-message to ~1-per-batch |
 | IDbContextFactory for Worker | Background services need independent DbContext instances; factory pattern avoids scoped-lifetime conflicts |
-| Auto-migration on startup | API runs `MigrateAsync()` on boot — zero manual migration steps in development |
+| Auto-migration on startup | Both API and Worker run `MigrateAsync()` on boot — zero manual migration steps |
+| Auto-register devices | Unknown vehicles from telemetry are automatically registered, no manual device setup required |
+| Strategy pattern for evaluators | `IRuleEvaluator` interface — add new rule types without modifying AlertEngine |
 | Prometheus endpoint on API | `/metrics` exposes request rates, latencies, and custom counters for Grafana dashboards |
 
 ## Tech Stack
@@ -43,28 +62,33 @@ Real-time monitoring platform for mining equipment. Collects GPS telemetry from 
 | ORM | Entity Framework Core 9 with Npgsql |
 | Database | PostgreSQL 16 |
 | Messaging | MQTTnet 5.1 (MQTT) + AWS SQS SDK |
-| Auth | JWT Bearer tokens |
+| Auth | ASP.NET Identity + JWT Bearer tokens with role claims |
+| Real-time | SignalR WebSocket hub |
 | Local AWS | LocalStack 3.8 |
 | MQTT Broker | Eclipse Mosquitto 2 |
 | Logging | Serilog (structured JSON) |
 | Metrics | OpenTelemetry + Prometheus exporter |
-| Testing | xUnit, Moq, EF Core InMemory |
+| Testing | xUnit, Moq, EF Core InMemory (52 unit + 13 integration) |
 | CI | GitHub Actions |
-| IaC | Terraform (AWS ECS Fargate) |
+| Containerization | Docker Compose (6 services) |
 
 ## Project Structure
 
 ```
 MineWatch/
 ├── src/
-│   ├── MineWatch.Api/              # REST API, controllers, middleware
-│   ├── MineWatch.Worker/           # Background services (MQTT subscriber, SQS consumer, batch writer)
-│   └── MineWatch.Infrastructure/   # Entities, DbContext, migrations, seeding
+│   ├── MineWatch.Api/              # REST API, controllers, SignalR hub, middleware
+│   ├── MineWatch.Worker/           # Background services (MQTT, SQS, batch writer, alert engine)
+│   ├── MineWatch.Infrastructure/   # Entities, DbContext, migrations, seeding
+│   └── MineWatch.Contracts/        # Shared DTOs (NotificationMessage)
 ├── tests/
-│   └── MineWatch.Api.Tests/        # Unit tests (10 tests)
+│   ├── MineWatch.Api.Tests/        # Unit tests (52 tests)
+│   └── MineWatch.IntegrationTests/ # Integration tests (13 tests)
 ├── TruckMocker/                    # GPS telemetry simulator
-├── infra/terraform/                # AWS infrastructure (ECS, RDS, SQS, ALB)
-└── docker-compose.yml              # Full local dev environment
+├── docs/                           # Design documents
+├── infra/                          # Docker configs, Terraform (planned)
+├── docker-compose.yml              # Full local dev environment
+└── verify-pipeline.sh              # One-command pipeline verification
 ```
 
 ## Getting Started
@@ -75,7 +99,13 @@ MineWatch/
 docker compose up -d
 ```
 
-This starts the entire stack: PostgreSQL, Mosquitto, LocalStack, API (with auto-migration + seed data), and Worker. The API is available at `http://localhost:5211/swagger`.
+This starts 6 services: PostgreSQL, Mosquitto, LocalStack, API (auto-migration + seed data + admin user), Worker, and TruckMocker. The API is available at `http://localhost:5211/swagger`.
+
+### Verify the pipeline
+
+```bash
+./verify-pipeline.sh | tee pipeline-verification.log
+```
 
 ### Manual startup (for development)
 
@@ -94,7 +124,7 @@ docker compose up -d postgres mosquitto localstack
 # 2. Run API (auto-migrates on startup)
 dotnet run --project src/MineWatch.Api
 
-# 3. Run Worker (MQTT subscriber + SQS consumer)
+# 3. Run Worker (MQTT subscriber + SQS consumer + alert engine)
 dotnet run --project src/MineWatch.Worker
 
 # 4. Start simulator
@@ -104,34 +134,79 @@ dotnet run --project TruckMocker
 ### Quick API test
 
 ```bash
-# Authenticate
-curl -X POST http://localhost:5211/api/auth \
+# Login as seeded admin
+TOKEN=$(curl -s -X POST http://localhost:5211/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"admin"}'
+  -d '{"username":"admin","password":"Admin@123"}' | python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
 
-# Use the returned token to list devices
-curl http://localhost:5211/api/devices \
-  -H "Authorization: Bearer <token>"
+# List devices
+curl http://localhost:5211/api/devices -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
+
+# Get latest telemetry
+curl http://localhost:5211/api/telemetry/latest -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
+
+# Query alerts
+curl http://localhost:5211/api/alerts -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
 ```
 
 ### Run tests
 
 ```bash
-dotnet test
+dotnet test          # All 65 tests (52 unit + 13 integration)
 ```
 
 ## API Endpoints
 
+### Authentication
+
 | Method | Endpoint | Auth | Description |
 |---|---|---|---|
-| POST | `/api/auth` | No | Authenticate, returns JWT |
-| GET | `/api/devices` | Yes | List devices (paginated) |
-| GET | `/api/devices/{id}` | Yes | Get device by ID |
-| POST | `/api/devices` | Yes | Create device |
-| PUT | `/api/devices/{id}` | Yes | Update device |
-| DELETE | `/api/devices/{id}` | Yes | Delete device |
+| POST | `/api/auth/register` | No | Register user with username, password, optional role |
+| POST | `/api/auth/login` | No | Login, returns JWT with role claims |
+
+### Devices
+
+| Method | Endpoint | Auth | Roles | Description |
+|---|---|---|---|---|
+| GET | `/api/devices` | Yes | Any | List devices (paginated) |
+| GET | `/api/devices/{id}` | Yes | Any | Get device by ID |
+| POST | `/api/devices` | Yes | Admin | Create device |
+| PUT | `/api/devices/{id}` | Yes | Admin, Operator | Update device |
+| DELETE | `/api/devices/{id}` | Yes | Admin | Delete device |
+
+### Telemetry
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| GET | `/api/telemetry/latest` | Yes | Latest position per vehicle (optional `vehicleNo` filter) |
+| GET | `/api/telemetry/history` | Yes | Historical trajectory (paginated, requires `vehicleNo`) |
+
+### Alerts
+
+| Method | Endpoint | Auth | Roles | Description |
+|---|---|---|---|---|
+| GET | `/api/alerts/rules` | Yes | Any | List alert rules (paginated) |
+| GET | `/api/alerts/rules/{id}` | Yes | Any | Get rule detail |
+| POST | `/api/alerts/rules` | Yes | Admin | Create alert rule |
+| PUT | `/api/alerts/rules/{id}` | Yes | Admin, Operator | Update rule |
+| DELETE | `/api/alerts/rules/{id}` | Yes | Admin | Delete rule |
+| GET | `/api/alerts` | Yes | Any | Query alerts (filter by status/device/rule, paginated) |
+| PUT | `/api/alerts/{id}/acknowledge` | Yes | Admin, Operator | Acknowledge alert |
+| PUT | `/api/alerts/{id}/resolve` | Yes | Admin, Operator | Resolve alert |
+
+### Infrastructure
+
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
 | GET | `/health/ready` | No | Readiness probe (checks DB) |
 | GET | `/metrics` | No | Prometheus metrics endpoint |
+
+### SignalR
+
+| Hub | Method | Description |
+|---|---|---|
+| `/hubs/telemetry` | `TelemetryUpdate` | Live vehicle position push |
+| `/hubs/telemetry` | `AlertReceived` | Live alert notification push |
 
 ## Observability
 
@@ -141,22 +216,33 @@ dotnet test
 | `GET /health/ready` | Kubernetes-style readiness probe (verifies DB connectivity) |
 | Console output | Structured JSON logs via Serilog (enriched with machine name, environment) |
 
-Connect Grafana to the `/metrics` endpoint to build dashboards for request rates, latency percentiles, and custom counters.
-
 ## Configuration
 
-Configuration is managed via `appsettings.json` and environment variables (overridden in docker-compose):
+Configuration is via `appsettings.json` and environment variables (overridden in docker-compose):
 
 | Key | Description |
 |---|---|
 | `ConnectionStrings:DefaultConnection` | PostgreSQL connection string |
-| `Jwt:Key` | JWT signing key (use User Secrets in development) |
-| `Jwt:TestUser / Jwt:Password` | Default credentials for development |
-| `Aws:ServiceUrl` | SQS endpoint (LocalStack or real AWS) |
+| `Jwt:Key` | JWT signing key (env var in production, User Secrets in development) |
+| `Jwt:Issuer` / `Jwt:Audience` | JWT token issuer and audience |
+| `AWS:ServiceURL` | SQS endpoint (LocalStack or real AWS) |
+| `AWS:Region` | AWS region |
 | `Sqs:QueueName` | SQS queue name |
 | `Sqs:DlqName` | Dead-letter queue name |
 | `Sqs:MaxReceiveCount` | DLQ threshold (default: 3) |
-| `Mqtt:Server / Mqtt:Port` | MQTT broker address |
+| `Mqtt:Server` / `Mqtt:Port` | MQTT broker address |
+
+## Default Seed Data
+
+On first startup, the system seeds:
+
+- **Roles:** Admin, Operator, Viewer
+- **Admin user:** username `admin`, password `Admin@123`
+- **Devices:** Truck-001, Truck-002, Truck-003
+- **Alert rules:**
+  - Speed Limit — Trucks: 40 km/h threshold, 300s cooldown
+  - Restricted Zone — Office Area: geo-fence circle (Perth CBD), no cooldown
+  - Idle Timeout — Trucks: 5 min stationary, 600s cooldown
 
 ## License
 
