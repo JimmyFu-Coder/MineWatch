@@ -149,14 +149,24 @@ public class AlertEngineTests
             seedCtx.AlertRules.AddRange(
                 new AlertRule
                 {
-                    Id = Guid.NewGuid(), Name = "Speed 10", RuleType = AlertRuleType.Speed,
-                    SpeedThreshold = 10, DeviceType = null, IsEnabled = true, CoolDownSeconds = 0,
+                    Id = Guid.NewGuid(),
+                    Name = "Speed 10",
+                    RuleType = AlertRuleType.Speed,
+                    SpeedThreshold = 10,
+                    DeviceType = null,
+                    IsEnabled = true,
+                    CoolDownSeconds = 0,
                     CreatedAt = DateTime.UtcNow
                 },
                 new AlertRule
                 {
-                    Id = Guid.NewGuid(), Name = "Speed 20", RuleType = AlertRuleType.Speed,
-                    SpeedThreshold = 20, DeviceType = null, IsEnabled = true, CoolDownSeconds = 0,
+                    Id = Guid.NewGuid(),
+                    Name = "Speed 20",
+                    RuleType = AlertRuleType.Speed,
+                    SpeedThreshold = 20,
+                    DeviceType = null,
+                    IsEnabled = true,
+                    CoolDownSeconds = 0,
                     CreatedAt = DateTime.UtcNow
                 }
             );

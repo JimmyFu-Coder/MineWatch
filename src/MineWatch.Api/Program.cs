@@ -61,6 +61,7 @@ try
     });
     builder.Services.AddControllers();
     builder.Services.AddScoped<IDeviceService, DeviceService>();
+    builder.Services.AddScoped<IAlertService, AlertService>();
     builder.Services.AddCors(options =>
     {
         options.AddDefaultPolicy(policy =>
