@@ -1,5 +1,6 @@
-namespace MineWatch.Worker.Services.AlertEngine;
 using MineWatch.Infrastructure.Entities;
+
+namespace MineWatch.Worker.Services.AlertEngine;
 
 public interface IRuleEvaluator
 {
