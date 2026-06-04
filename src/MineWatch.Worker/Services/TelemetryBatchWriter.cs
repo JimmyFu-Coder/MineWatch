@@ -4,12 +4,14 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MineWatch.Infrastructure.Data;
 using MineWatch.Infrastructure.Entities;
+using MineWatch.Worker.Services.AlertEngine;
 
 namespace MineWatch.Worker.Services;
 
 public class TelemetryBatchWriter(
     Channel<TelemetryReading> channel,
     IDbContextFactory<MineWatchDbContext> dbContextFactory,
+    IAlertEngine alertEngine,
     ILogger<TelemetryBatchWriter> logger,
     int batchSize = 100,
     TimeSpan? batchTimeout = null) : BackgroundService
@@ -83,5 +85,10 @@ public class TelemetryBatchWriter(
         dbContext.TelemetryReadings.AddRange(batch);
         await dbContext.SaveChangesAsync();
         logger.LogInformation("Wrote {Count} telemetry readings to database", batch.Count);
+
+        foreach (var reading in batch)
+        {
+            await alertEngine.EvaluateAsync(reading);
+        }
     }
 }

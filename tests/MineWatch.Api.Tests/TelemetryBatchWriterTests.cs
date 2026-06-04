@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using MineWatch.Infrastructure.Data;
 using MineWatch.Infrastructure.Entities;
 using MineWatch.Worker.Services;
+using MineWatch.Worker.Services.AlertEngine;
 using Moq;
 
 namespace MineWatch.Api.Tests;
@@ -38,6 +39,14 @@ public class TelemetryBatchWriterTests
         return factory;
     }
 
+    private static Mock<IAlertEngine> CreateMockAlertEngine()
+    {
+        var engine = new Mock<IAlertEngine>();
+        engine.Setup(e => e.EvaluateAsync(It.IsAny<TelemetryReading>()))
+            .Returns(Task.CompletedTask);
+        return engine;
+    }
+
     [Fact(Timeout = 5000)]
     public async Task ExecuteAsync_WhenBatchSizeReached_WritesAllToDatabase()
     {
@@ -48,9 +57,10 @@ public class TelemetryBatchWriterTests
         channel.Writer.Complete();
 
         var dbContextFactory = CreateMockDbContextFactory("BatchTest_Full");
+        var alertEngine = CreateMockAlertEngine();
         var logger = new Mock<ILogger<TelemetryBatchWriter>>();
         var writer = new TelemetryBatchWriter(
-            channel, dbContextFactory.Object, logger.Object,
+            channel, dbContextFactory.Object, alertEngine.Object, logger.Object,
             batchSize: 5, batchTimeout: TimeSpan.FromMilliseconds(500));
 
         await writer.StartAsync(CancellationToken.None);
@@ -72,9 +82,10 @@ public class TelemetryBatchWriterTests
         channel.Writer.Complete();
 
         var dbContextFactory = CreateMockDbContextFactory("BatchTest_Timeout");
+        var alertEngine = CreateMockAlertEngine();
         var logger = new Mock<ILogger<TelemetryBatchWriter>>();
         var writer = new TelemetryBatchWriter(
-            channel, dbContextFactory.Object, logger.Object,
+            channel, dbContextFactory.Object, alertEngine.Object, logger.Object,
             batchSize: 100, batchTimeout: TimeSpan.FromMilliseconds(200));
 
         await writer.StartAsync(CancellationToken.None);
@@ -94,9 +105,10 @@ public class TelemetryBatchWriterTests
         channel.Writer.Complete();
 
         var dbContextFactory = CreateMockDbContextFactory("BatchTest_Empty");
+        var alertEngine = CreateMockAlertEngine();
         var logger = new Mock<ILogger<TelemetryBatchWriter>>();
         var writer = new TelemetryBatchWriter(
-            channel, dbContextFactory.Object, logger.Object,
+            channel, dbContextFactory.Object, alertEngine.Object, logger.Object,
             batchSize: 100, batchTimeout: TimeSpan.FromMilliseconds(100));
 
         await writer.StartAsync(CancellationToken.None);
@@ -119,9 +131,10 @@ public class TelemetryBatchWriterTests
         channel.Writer.Complete();
 
         var dbContextFactory = CreateMockDbContextFactory("BatchTest_Multiple");
+        var alertEngine = CreateMockAlertEngine();
         var logger = new Mock<ILogger<TelemetryBatchWriter>>();
         var writer = new TelemetryBatchWriter(
-            channel, dbContextFactory.Object, logger.Object,
+            channel, dbContextFactory.Object, alertEngine.Object, logger.Object,
             batchSize: 5, batchTimeout: TimeSpan.FromMilliseconds(300));
 
         // Act                                                                                 
@@ -151,9 +164,10 @@ public class TelemetryBatchWriterTests
             await channel.Writer.WriteAsync(r);
         var cts = new CancellationTokenSource();
         var dbContextFactory = CreateMockDbContextFactory("BatchTest_Cancelled");
+        var alertEngine = CreateMockAlertEngine();
         var logger = new Mock<ILogger<TelemetryBatchWriter>>();
         var writer = new TelemetryBatchWriter(
-            channel, dbContextFactory.Object, logger.Object,
+            channel, dbContextFactory.Object, alertEngine.Object, logger.Object,
             batchSize: 100, batchTimeout: TimeSpan.FromMilliseconds(300));
         await writer.StartAsync(cts.Token);
         await Task.Delay(800);
@@ -195,9 +209,10 @@ public class TelemetryBatchWriterTests
 
         // First DbContext creation fails, second succeeds
         var dbContextFactory = CreateFailingMockDbContextFactory("BatchTest_RetrySuccess", failCount: 1);
+        var alertEngine = CreateMockAlertEngine();
         var logger = new Mock<ILogger<TelemetryBatchWriter>>();
         var writer = new TelemetryBatchWriter(
-            channel, dbContextFactory.Object, logger.Object,
+            channel, dbContextFactory.Object, alertEngine.Object, logger.Object,
             batchSize: 100, batchTimeout: TimeSpan.FromMilliseconds(200));
 
         await writer.StartAsync(CancellationToken.None);
@@ -217,9 +232,10 @@ public class TelemetryBatchWriterTests
         await channel.Writer.WriteAsync(CreateReading());
 
         var dbContextFactory = CreateFailingMockDbContextFactory("BatchTest_RetryFail", failCount: 10);
+        var alertEngine = CreateMockAlertEngine();
         var logger = new Mock<ILogger<TelemetryBatchWriter>>();
         var writer = new TelemetryBatchWriter(
-            channel, dbContextFactory.Object, logger.Object,
+            channel, dbContextFactory.Object, alertEngine.Object, logger.Object,
             batchSize: 100, batchTimeout: TimeSpan.FromMilliseconds(200));
 
         await writer.StartAsync(CancellationToken.None);
@@ -236,9 +252,10 @@ public class TelemetryBatchWriterTests
         await channel.Writer.WriteAsync(CreateReading("TRUCK-001"));
         channel.Writer.Complete();
         var dbContextFactory = CreateMockDbContextFactory("BatchTest_OneItem_Cancelled");
+        var alertEngine = CreateMockAlertEngine();
         var logger = new Mock<ILogger<TelemetryBatchWriter>>();
         var writer = new TelemetryBatchWriter(
-            channel, dbContextFactory.Object, logger.Object,
+            channel, dbContextFactory.Object, alertEngine.Object, logger.Object,
             batchSize: 100, batchTimeout: TimeSpan.FromMilliseconds(1000));
         await writer.StartAsync(CancellationToken.None);
         await Task.Delay(800);

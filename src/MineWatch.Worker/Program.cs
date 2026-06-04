@@ -8,6 +8,8 @@ using MineWatch.Infrastructure.Data;
 using MineWatch.Infrastructure.Entities;
 using MineWatch.Worker.Configuration;
 using MineWatch.Worker.Services;
+using MineWatch.Worker.Services.AlertEngine;
+using MineWatch.Worker.Services.AlertEngine.Evaluators;
 using Serilog;
 using Serilog.Formatting.Compact;
 
@@ -42,6 +44,11 @@ try
         services.AddHostedService<MqttSubscriberService>();
         services.AddHostedService<SqsConsumerWorker>();
         services.AddHostedService<TelemetryBatchWriter>();
+
+        services.AddSingleton<IRuleEvaluator, SpeedRuleEvaluator>();
+        services.AddSingleton<IRuleEvaluator, GeoFenceRuleEvaluator>();
+        services.AddSingleton<IRuleEvaluator, IdleRuleEvaluator>();
+        services.AddSingleton<IAlertEngine, AlertEngine>();
     });
 
     var host = builder.Build();
