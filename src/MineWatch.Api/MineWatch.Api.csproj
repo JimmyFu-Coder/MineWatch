@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\MineWatch.Contracts\MineWatch.Contracts.csproj" />
     <ProjectReference Include="..\MineWatch.Infrastructure\MineWatch.Infrastructure.csproj" />
   </ItemGroup>
 

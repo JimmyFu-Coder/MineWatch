@@ -10,6 +10,7 @@ using MineWatch.Worker.Configuration;
 using MineWatch.Worker.Services;
 using MineWatch.Worker.Services.AlertEngine;
 using MineWatch.Worker.Services.AlertEngine.Evaluators;
+using MineWatch.Worker.Services.Notifications;
 using Serilog;
 using Serilog.Formatting.Compact;
 
@@ -48,6 +49,8 @@ try
         services.AddSingleton<IRuleEvaluator, SpeedRuleEvaluator>();
         services.AddSingleton<IRuleEvaluator, GeoFenceRuleEvaluator>();
         services.AddSingleton<IRuleEvaluator, IdleRuleEvaluator>();
+        services.AddSingleton<INotificationPublisher, NotificationPublisher>();
+        services.AddSingleton<NotificationPublisherConfig>();
         services.AddSingleton<IAlertEngine, AlertEngine>();
     });
 

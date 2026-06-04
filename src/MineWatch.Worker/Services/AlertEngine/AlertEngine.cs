@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MineWatch.Infrastructure.Data;
 using MineWatch.Infrastructure.Entities;
+using MineWatch.Worker.Services.Notifications;
 
 namespace MineWatch.Worker.Services.AlertEngine;
 
@@ -11,6 +12,7 @@ namespace MineWatch.Worker.Services.AlertEngine;
 public class AlertEngine(
     IDbContextFactory<MineWatchDbContext> dbContextFactory,
     IEnumerable<IRuleEvaluator> evaluators,
+    INotificationPublisher notificationPublisher,
     ILogger<AlertEngine> logger) : IAlertEngine
 {
     private List<AlertRule> _cachedRules = [];
@@ -91,5 +93,10 @@ public class AlertEngine(
         dbContext.Alerts.AddRange(alerts);
         await dbContext.SaveChangesAsync();
         logger.LogInformation("Persisted {Count} alerts", alerts.Count);
+
+        foreach (var alert in alerts)
+        {
+            await notificationPublisher.PublishAlertAsync(alert);
+        }
     }
 }

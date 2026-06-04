@@ -1,9 +1,12 @@
 using System.Text;
+using Amazon.SQS;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using MineWatch.Api.Configuration;
+using MineWatch.Api.Hubs;
 using MineWatch.Api.Middleware;
 using MineWatch.Api.Services;
 using MineWatch.Infrastructure.Data;
@@ -62,13 +65,20 @@ try
     builder.Services.AddControllers();
     builder.Services.AddScoped<IDeviceService, DeviceService>();
     builder.Services.AddScoped<IAlertService, AlertService>();
+
+    builder.Services.AddSignalR();
+    builder.Services.AddSingleton<NotificationConfig>();
+    builder.Services.AddDefaultAWSOptions(builder.Configuration.GetAWSOptions());
+    builder.Services.AddAWSService<IAmazonSQS>();
+    builder.Services.AddHostedService<NotificationWorker>();
     builder.Services.AddCors(options =>
     {
         options.AddDefaultPolicy(policy =>
         {
             policy.AllowAnyOrigin()
                 .AllowAnyMethod()
-                .AllowAnyHeader();
+                .AllowAnyHeader()
+                .AllowCredentials();
         });
     });
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
@@ -112,6 +122,7 @@ try
     app.MapHealthChecks("/health/ready");
     app.UseOpenTelemetryPrometheusScrapingEndpoint();
     app.MapControllers();
+    app.MapHub<TelemetryHub>("/hubs/telemetry");
     app.Run();
 }
 catch (Exception e)

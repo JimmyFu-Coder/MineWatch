@@ -1,0 +1,59 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using MineWatch.Api.DTOs;
+using MineWatch.Infrastructure.Data;
+
+namespace MineWatch.Api.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]
+public class TelemetryController(MineWatchDbContext context) : ControllerBase
+{
+    [HttpGet("latest")]
+    public async Task<IActionResult> GetLatest([FromQuery] string? vehicleNo)
+    {
+        var query = context.TelemetryReadings.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(vehicleNo))
+            query = query.Where(r => r.VehicleNo == vehicleNo);
+
+        var latest = await query
+            .GroupBy(r => r.DeviceId)
+            .Select(g => g.OrderByDescending(r => r.Timestamp).First())
+            .Join(context.Devices, r => r.DeviceId, d => d.Id, (r, d) => new LatestPositionResponse(
+                r.DeviceId, r.VehicleNo, r.Lat, r.Lon, r.Speed, r.Heading, r.Timestamp))
+            .ToListAsync();
+
+        return Ok(latest);
+    }
+
+    [HttpGet("history")]
+    public async Task<IActionResult> GetHistory(
+        [FromQuery] string vehicleNo,
+        [FromQuery] DateTime? from,
+        [FromQuery] DateTime? to,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 100)
+    {
+        if (string.IsNullOrWhiteSpace(vehicleNo))
+            return BadRequest("vehicleNo is required");
+
+        var query = context.TelemetryReadings
+            .Where(r => r.VehicleNo == vehicleNo);
+
+        if (from.HasValue)
+            query = query.Where(r => r.Timestamp >= from.Value);
+        if (to.HasValue)
+            query = query.Where(r => r.Timestamp <= to.Value);
+
+        var total = await query.CountAsync();
+        var points = await query
+            .OrderBy(r => r.Timestamp)
+            .Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(r => new HistoryPoint(r.Lat, r.Lon, r.Speed, r.Heading, r.Timestamp))
+            .ToListAsync();
+
+        return Ok(new HistoryResponse(vehicleNo, points, total));
+    }
+}
