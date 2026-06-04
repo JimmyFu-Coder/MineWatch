@@ -47,7 +47,8 @@ public class AlertService(MineWatchDbContext context) : IAlertService
     public async Task<RuleResponse?> UpdateRuleAsync(Guid id, UpdateRuleRequest request)
     {
         var rule = await context.AlertRules.FindAsync(id);
-        if (rule == null) return null;
+        if (rule == null)
+            return null;
 
         rule.Name = request.Name ?? rule.Name;
         rule.Severity = request.Severity != null ? Enum.Parse<AlertSeverity>(request.Severity) : rule.Severity;
@@ -84,7 +85,8 @@ public class AlertService(MineWatchDbContext context) : IAlertService
     public async Task<bool> DeleteRuleAsync(Guid id)
     {
         var rule = await context.AlertRules.FindAsync(id);
-        if (rule == null) return false;
+        if (rule == null)
+            return false;
         context.AlertRules.Remove(rule);
         await context.SaveChangesAsync();
         return true;
@@ -94,9 +96,12 @@ public class AlertService(MineWatchDbContext context) : IAlertService
         int page, int pageSize, AlertStatus? status, Guid? deviceId, Guid? ruleId)
     {
         var query = context.Alerts.AsQueryable();
-        if (status.HasValue) query = query.Where(a => a.Status == status.Value);
-        if (deviceId.HasValue) query = query.Where(a => a.DeviceId == deviceId.Value);
-        if (ruleId.HasValue) query = query.Where(a => a.RuleId == ruleId.Value);
+        if (status.HasValue)
+            query = query.Where(a => a.Status == status.Value);
+        if (deviceId.HasValue)
+            query = query.Where(a => a.DeviceId == deviceId.Value);
+        if (ruleId.HasValue)
+            query = query.Where(a => a.RuleId == ruleId.Value);
 
         var total = await query.CountAsync();
         var items = await query
@@ -115,7 +120,8 @@ public class AlertService(MineWatchDbContext context) : IAlertService
     public async Task<AlertResponse?> AcknowledgeAlertAsync(Guid id, AcknowledgeRequest request)
     {
         var alert = await context.Alerts.Include(a => a.Rule).Include(a => a.Device).FirstOrDefaultAsync(a => a.Id == id);
-        if (alert == null || alert.Status != AlertStatus.Active) return null;
+        if (alert == null || alert.Status != AlertStatus.Active)
+            return null;
 
         alert.Status = AlertStatus.Acknowledged;
         alert.AcknowledgedBy = request.AcknowledgedBy;
@@ -127,7 +133,8 @@ public class AlertService(MineWatchDbContext context) : IAlertService
     public async Task<AlertResponse?> ResolveAlertAsync(Guid id)
     {
         var alert = await context.Alerts.Include(a => a.Rule).Include(a => a.Device).FirstOrDefaultAsync(a => a.Id == id);
-        if (alert == null || alert.Status == AlertStatus.Resolved) return null;
+        if (alert == null || alert.Status == AlertStatus.Resolved)
+            return null;
 
         alert.Status = AlertStatus.Resolved;
         alert.ResolvedAt = DateTime.UtcNow;
